@@ -86,9 +86,16 @@ def register_routes(
             job = db.get_job(conn, job_id)
             if job is None:
                 raise HTTPException(404, "job not found")
+            # Resolve to a binder row for finished jobs (fresh fetch or
+            # successful refresh) and for cancelled refreshes — the latter
+            # left the original binder data intact, so the UI should restore
+            # it in place of the cancelled job row.
+            should_render_binder = job.status == "done" or (
+                job.status == "cancelled" and job.refresh_of_binder_id is not None
+            )
             binder = (
                 db.get_binder_by_moxfield_id(conn, job.moxfield_id)
-                if job.status == "done"
+                if should_render_binder
                 else None
             )
         if binder is not None:
@@ -134,14 +141,26 @@ def register_routes(
         )
         return templates.TemplateResponse(request, "_job_row.html", {"job": job})
 
-    @app.post("/jobs/{job_id}/cancel")
-    async def cancel_job(job_id: int) -> str:
+    @app.post("/jobs/{job_id}/cancel", response_class=HTMLResponse)
+    async def cancel_job(request: Request, job_id: int) -> HTMLResponse:
         with db.connect(db_path) as conn:
             job = db.get_job(conn, job_id)
             if job is None:
                 raise HTTPException(404, "job not found")
             db.cancel_job(conn, job_id, updated_at=iso_now())
-        return ""
+            # If this was a refresh, the original binder is untouched — restore
+            # its row in place of the cancelled job row so the user doesn't
+            # have to reload to see their data come back.
+            binder = (
+                db.get_binder_by_moxfield_id(conn, job.moxfield_id)
+                if job.refresh_of_binder_id is not None
+                else None
+            )
+        if binder is not None:
+            return templates.TemplateResponse(
+                request, "_binder_row.html", {"binder": binder}
+            )
+        return HTMLResponse("")
 
     @app.post("/search", response_class=HTMLResponse)
     async def search(

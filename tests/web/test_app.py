@@ -317,11 +317,107 @@ def test_cancel_job_marks_cancelled(tmp_path: Path) -> None:
     client = TestClient(app)
     r = client.post(f"/jobs/{job_id}/cancel")
     assert r.status_code == 200
+    # Fresh-fetch cancel: no binder to restore, response is empty so HTMX
+    # outerHTML swap removes the cancelled row from the table.
+    assert r.text == ""
 
     with db.connect(db_path) as conn:
         job = db.get_job(conn, job_id)
     assert job is not None
     assert job.status == "cancelled"
+
+
+def test_cancel_refresh_restores_binder_row(tmp_path: Path) -> None:
+    """Cancelling a refresh returns the original binder row markup so the UI
+    swaps back from the cancelled job row to the (untouched) binder row
+    without requiring a page reload."""
+    db_path = tmp_path / "test.db"
+    db.init_schema(db_path)
+    with db.connect(db_path) as conn:
+        binder_id = db.create_binder(
+            conn,
+            moxfield_id="REFRESHME",
+            name="Refresh Me",
+            fetched_at=_now(),
+            entry_count=3,
+            total_cards=12,
+        )
+        job_id = db.create_job(
+            conn,
+            moxfield_id="REFRESHME",
+            refresh_of_binder_id=binder_id,
+            created_at=_now(),
+        )
+        db.update_job_progress(
+            conn,
+            job_id,
+            status="fetching",
+            pages_done=1,
+            pages_total=4,
+            updated_at=_now(),
+        )
+
+    client = TestClient(build_app(db_path=db_path))
+    r = client.post(f"/jobs/{job_id}/cancel")
+    assert r.status_code == 200
+    # Response is the binder row, not empty / not the cancelled job row.
+    assert "Refresh Me" in r.text
+    assert 'href="https://moxfield.com/binders/REFRESHME"' in r.text
+    assert 'class="binder-row"' in r.text
+    assert "cancelled" not in r.text
+
+
+def test_get_cancelled_refresh_job_renders_binder_row(tmp_path: Path) -> None:
+    """If an HTMX poll wins the race against the cancel response, the GET
+    endpoint must also resolve a cancelled-refresh job to the binder row."""
+    db_path = tmp_path / "test.db"
+    db.init_schema(db_path)
+    with db.connect(db_path) as conn:
+        binder_id = db.create_binder(
+            conn,
+            moxfield_id="POLLED",
+            name="Polled Binder",
+            fetched_at=_now(),
+            entry_count=2,
+            total_cards=5,
+        )
+        job_id = db.create_job(
+            conn,
+            moxfield_id="POLLED",
+            refresh_of_binder_id=binder_id,
+            created_at=_now(),
+        )
+        db.cancel_job(conn, job_id, updated_at=_now())
+
+    client = TestClient(build_app(db_path=db_path))
+    r = client.get(f"/jobs/{job_id}")
+    assert r.status_code == 200
+    assert "Polled Binder" in r.text
+    assert 'class="binder-row"' in r.text
+
+
+def test_get_cancelled_fresh_fetch_renders_job_row(tmp_path: Path) -> None:
+    """A cancelled fresh fetch (no refresh_of_binder_id) has no binder to
+    restore — the GET endpoint should still return the job row markup so the
+    poll's existing swap logic resolves it (poll attribute is not emitted in
+    cancelled state, so polling stops naturally)."""
+    db_path = tmp_path / "test.db"
+    db.init_schema(db_path)
+    with db.connect(db_path) as conn:
+        job_id = db.create_job(
+            conn,
+            moxfield_id="ORPHAN",
+            refresh_of_binder_id=None,
+            created_at=_now(),
+        )
+        db.cancel_job(conn, job_id, updated_at=_now())
+
+    client = TestClient(build_app(db_path=db_path))
+    r = client.get(f"/jobs/{job_id}")
+    assert r.status_code == 200
+    assert "cancelled" in r.text
+    assert "ORPHAN" in r.text
+    assert 'class="binder-row"' not in r.text
 
 
 def test_run_argument_parsing(monkeypatch: pytest.MonkeyPatch) -> None:
