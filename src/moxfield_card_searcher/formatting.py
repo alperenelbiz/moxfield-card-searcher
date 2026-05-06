@@ -51,3 +51,49 @@ def annotation_for(r: MatchResult) -> str:
     if r.also_has_foil > 0:
         parts.append(f"also has foil: {r.also_has_foil}")
     return "; ".join(parts)
+
+
+def narrative_status_for(r: MatchResult) -> tuple[str, str]:
+    """Render a (headline, detail) pair for the web UI's card tile.
+
+    Headline is a short narrative status ("All 4 owned", "Need 2 more").
+    Detail is a longer mono-styled line with set/CN/printing context.
+    Returns ("", "") for NON_HIT — those entries don't reach the template
+    via per-binder groups; the missing-list section handles them separately."""
+    tier = r.tier
+    if tier is MatchTier.NON_HIT:
+        return ("", "")
+
+    has_set = r.want.set is not None and r.want.cn is not None
+
+    set_code = r.want.set
+    cn_code = r.want.cn
+
+    if tier is MatchTier.HIT_WITH_SET:
+        assert set_code is not None and cn_code is not None
+        headline = f"All {r.want.qty} owned"
+        detail = f"{set_code.upper()} · {cn_code} — exact printing"
+    elif tier is MatchTier.HIT and has_set:
+        headline = f"All {r.want.qty} owned"
+        detail = "other printing"
+    elif tier is MatchTier.HIT:
+        headline = f"All {r.want.qty} owned"
+        detail = f"total owned: {r.total_count}"
+    elif tier is MatchTier.PARTIAL_HIT_WITH_SET:
+        assert set_code is not None and cn_code is not None
+        missing = r.want.qty - r.total_count
+        headline = f"Need {missing} more"
+        detail = (
+            f"{set_code.upper()} · {cn_code} — "
+            f"have {r.specific_count} of {r.want.qty} (exact printing)"
+        )
+    elif tier is MatchTier.PARTIAL_HIT:
+        missing = r.want.qty - r.total_count
+        headline = f"Need {missing} more"
+        detail = f"other printing — have {r.total_count} of {r.want.qty}"
+    else:
+        return ("", "")
+
+    if r.also_has_foil > 0:
+        detail = f"{detail}; also has {r.also_has_foil} foil"
+    return (headline, detail)
