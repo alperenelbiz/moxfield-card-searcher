@@ -1,5 +1,5 @@
 from moxfield_card_searcher.collection import Collection
-from moxfield_card_searcher.models import (
+from moxfield_card_searcher.domain import (
     FoilKind,
     MatchResult,
     MatchTier,

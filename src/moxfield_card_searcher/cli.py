@@ -3,8 +3,8 @@ import sys
 from pathlib import Path
 
 from moxfield_card_searcher.collection import Collection
+from moxfield_card_searcher.domain import MatchResult, MatchTier, WantEntry
 from moxfield_card_searcher.matcher import match
-from moxfield_card_searcher.models import MatchResult, MatchTier, WantEntry
 from moxfield_card_searcher.parser import parse_list
 
 _TIER_FILENAMES: dict[MatchTier, str] = {

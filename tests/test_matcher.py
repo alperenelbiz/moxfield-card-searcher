@@ -1,11 +1,11 @@
 from moxfield_card_searcher.collection import Collection
-from moxfield_card_searcher.matcher import match
-from moxfield_card_searcher.models import (
+from moxfield_card_searcher.domain import (
     CollectionEntry,
     FoilKind,
     MatchTier,
     WantEntry,
 )
+from moxfield_card_searcher.matcher import match
 
 
 def make_collection(entries: list[CollectionEntry]) -> Collection:

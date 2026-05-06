@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Any
 
 from moxfield_card_searcher.collection import Collection
+from moxfield_card_searcher.domain import MatchTier, WantEntry
 from moxfield_card_searcher.matcher import match
-from moxfield_card_searcher.models import MatchTier, WantEntry
 from moxfield_card_searcher.web import db
 from moxfield_card_searcher.web.view_helpers import (
     annotation_for,

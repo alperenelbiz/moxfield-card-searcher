@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from moxfield_card_searcher.models import CollectionEntry, FoilKind
+from moxfield_card_searcher.domain import CollectionEntry, FoilKind
 
 if TYPE_CHECKING:
     from moxfield_card_searcher.web.db import CardRow
