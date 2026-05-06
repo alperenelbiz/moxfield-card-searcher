@@ -7,6 +7,7 @@ templates, static files, and the argparse + uvicorn launcher.
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 from pathlib import Path
 
@@ -47,6 +48,11 @@ def run(argv: list[str] | None = None) -> None:
         "--db", type=Path, default=Path(os.environ.get("MOXFIELD_CARD_SEARCHER_DB", "binders.db"))
     )
     args = p.parse_args(argv)
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
 
     import uvicorn
 

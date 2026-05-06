@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,8 @@ from moxfield_card_searcher.web import db
 from moxfield_card_searcher.web._util import iso_now as _now
 
 PagesIter = Callable[[Any, str], Iterator[PageResult]]
+
+_log = logging.getLogger(__name__)
 
 
 async def run_fetch_job(
@@ -49,6 +52,7 @@ def _run_fetch_job_sync(
     scraper: Any,
     pages_iter: PagesIter,
 ) -> None:
+    _log.info("fetch job %s starting for binder %s", job_id, binder_id)
     rows: list[db.CardRow] = []
     binder_name = ""
     total_cards = 0
@@ -58,6 +62,7 @@ def _run_fetch_job_sync(
                 # Cooperative cancellation check.
                 job = db.get_job(conn, job_id)
                 if job is not None and job.status == "cancelled":
+                    _log.info("fetch job %s cancelled mid-stream", job_id)
                     return
                 db.update_job_progress(
                     conn,
@@ -73,6 +78,7 @@ def _run_fetch_job_sync(
                 rows.append(row)
                 total_cards += row.count
     except Exception as exc:  # network, JSON, anything
+        _log.exception("fetch job %s failed: %s", job_id, exc)
         with db.connect(db_path) as exc_conn:
             db.fail_job(exc_conn, job_id, error=str(exc), updated_at=_now())
         return
@@ -81,6 +87,7 @@ def _run_fetch_job_sync(
     with db.connect(db_path) as conn:
         job = db.get_job(conn, job_id)
         if job is not None and job.status == "cancelled":
+            _log.info("fetch job %s cancelled before commit", job_id)
             return
 
         binder_row_id = db.create_binder(
@@ -93,6 +100,9 @@ def _run_fetch_job_sync(
         )
         db.insert_cards(conn, binder_row_id, rows)
         db.finish_job(conn, job_id, updated_at=_now())
+    _log.info(
+        "fetch job %s done — %d entries, %d cards", job_id, len(rows), total_cards
+    )
 
 
 async def run_refresh_job(
@@ -128,6 +138,10 @@ def _run_refresh_job_sync(
     scraper: Any,
     pages_iter: PagesIter,
 ) -> None:
+    _log.info(
+        "refresh job %s starting (binder=%s, existing_id=%d)",
+        job_id, binder_id, existing_binder_id,
+    )
     rows: list[db.CardRow] = []
     binder_name = ""
     total_cards = 0
@@ -136,6 +150,7 @@ def _run_refresh_job_sync(
             with db.connect(db_path) as conn:
                 job = db.get_job(conn, job_id)
                 if job is not None and job.status == "cancelled":
+                    _log.info("refresh job %s cancelled mid-stream", job_id)
                     return
                 db.update_job_progress(
                     conn,
@@ -151,6 +166,7 @@ def _run_refresh_job_sync(
                 rows.append(row)
                 total_cards += row.count
     except Exception as exc:
+        _log.exception("refresh job %s failed (old data preserved): %s", job_id, exc)
         with db.connect(db_path) as exc_conn:
             db.fail_job(exc_conn, job_id, error=str(exc), updated_at=_now())
         return
@@ -158,6 +174,7 @@ def _run_refresh_job_sync(
     with db.connect(db_path) as conn:
         job = db.get_job(conn, job_id)
         if job is not None and job.status == "cancelled":
+            _log.info("refresh job %s cancelled before swap", job_id)
             return
 
         # Atomic swap: delete old cards, update metadata, insert new cards.
@@ -194,3 +211,7 @@ def _run_refresh_job_sync(
             raise
 
         db.finish_job(conn, job_id, updated_at=_now())
+    _log.info(
+        "refresh job %s done — %d entries, %d cards swapped in",
+        job_id, len(rows), total_cards,
+    )
