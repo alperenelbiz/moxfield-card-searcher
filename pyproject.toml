@@ -1,6 +1,6 @@
 [project]
 name = "moxfield-card-searcher"
-version = "1.0.0"
+version = "1.0.1"
 description = "Compare an MTG card list against a Moxfield collection CSV"
 requires-python = ">=3.13"
 dependencies = []
