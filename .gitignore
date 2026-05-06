@@ -21,15 +21,8 @@ Thumbs.db
 .idea/
 .vscode/
 
-# User-fetched binder data and search outputs (project root only —
-# tests/fixtures/*.csv must stay tracked).
-/*.csv
-!tests/fixtures/*.csv
-/results-*/
-/tarama-listesi.txt
+# User-fetched binder data 
 binders.db
-binders.db-wal
-binders.db-shm
 
 # Personal planning artifacts kept out of the public repo.
 /docs/
