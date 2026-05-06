@@ -25,6 +25,7 @@ from moxfield_card_searcher.binder_fetcher import (
     fetch_pages,
     make_scraper,
 )
+from moxfield_card_searcher.domain import FoilKind
 
 CONDITION_TO_CSV = {
     "nearMint": "NM",
@@ -32,12 +33,6 @@ CONDITION_TO_CSV = {
     "moderatelyPlayed": "MP",
     "heavilyPlayed": "HP",
     "damaged": "DMG",
-}
-
-FINISH_TO_CSV_FOIL = {
-    "nonFoil": "",
-    "foil": "foil",
-    "etched": "etched",
 }
 
 CSV_COLUMNS = [
@@ -61,7 +56,7 @@ def entry_to_csv_row(entry: dict[str, Any]) -> dict[str, str]:
     """Map one Moxfield API entry to a Moxfield collection CSV row."""
     card = entry.get("card") or {}
     finish = entry.get("finish", "nonFoil")
-    foil = FINISH_TO_CSV_FOIL.get(finish, "")
+    foil = FoilKind.from_finish(finish).value
 
     last_modified = entry.get("lastUpdatedAtUtc") or entry.get("createdAtUtc") or ""
     if last_modified.endswith("Z"):

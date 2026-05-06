@@ -19,10 +19,25 @@ def test_match_tier_has_five_values() -> None:
 
 def test_foil_kind_has_three_values_with_correct_strings() -> None:
     assert {(f.name, f.value) for f in FoilKind} == {
-        ("NONE", "none"),
+        ("NONE", ""),
         ("FOIL", "foil"),
         ("ETCHED", "etched"),
     }
+
+
+def test_foil_kind_from_finish_maps_api_strings() -> None:
+    assert FoilKind.from_finish("nonFoil") is FoilKind.NONE
+    assert FoilKind.from_finish("foil") is FoilKind.FOIL
+    assert FoilKind.from_finish("etched") is FoilKind.ETCHED
+    assert FoilKind.from_finish("anything-unknown") is FoilKind.NONE
+
+
+def test_foil_kind_from_str_handles_csv_and_db_columns() -> None:
+    assert FoilKind.from_str("") is FoilKind.NONE
+    assert FoilKind.from_str("foil") is FoilKind.FOIL
+    assert FoilKind.from_str("ETCHED") is FoilKind.ETCHED
+    assert FoilKind.from_str("  foil  ") is FoilKind.FOIL
+    assert FoilKind.from_str("nope") is FoilKind.NONE
 
 
 def test_want_entry_construction() -> None:

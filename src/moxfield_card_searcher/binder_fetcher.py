@@ -9,18 +9,13 @@ from typing import Any, Protocol, cast
 
 import cloudscraper  # pyright: ignore[reportMissingTypeStubs]
 
+from moxfield_card_searcher.domain import FoilKind
 from moxfield_card_searcher.web.db import CardRow
 
 _API_TEMPLATE = "https://api2.moxfield.com/v1/trade-binders/{binder_id}"
 _PAGE_SIZE = 100
 _PACING_SECONDS = 0.4
 _REQUEST_TIMEOUT = 30
-
-_FINISH_TO_FOIL = {
-    "nonFoil": "",
-    "foil": "foil",
-    "etched": "etched",
-}
 
 _BINDER_URL_RE = re.compile(r"/binders/([A-Za-z0-9_-]+)")
 
@@ -114,6 +109,6 @@ def entry_to_card_row(entry: dict[str, Any]) -> CardRow:
         edition=str(card.get("set", "")).lower(),
         collector_number=str(card.get("cn", "")).lower(),
         count=int(entry.get("quantity") or 0),
-        foil=_FINISH_TO_FOIL.get(finish, ""),
+        foil=FoilKind.from_finish(finish).value,
         scryfall_id=scryfall_id,
     )

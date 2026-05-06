@@ -11,9 +11,28 @@ class MatchTier(Enum):
 
 
 class FoilKind(Enum):
-    NONE = "none"
+    NONE = ""
     FOIL = "foil"
     ETCHED = "etched"
+
+    @classmethod
+    def from_finish(cls, finish: str) -> "FoilKind":
+        """Map Moxfield API ``finish`` strings to a FoilKind."""
+        if finish == "foil":
+            return cls.FOIL
+        if finish == "etched":
+            return cls.ETCHED
+        return cls.NONE
+
+    @classmethod
+    def from_str(cls, value: str) -> "FoilKind":
+        """Map a CSV/DB foil column to a FoilKind. Unknown values fall back to NONE."""
+        normalised = value.strip().lower()
+        if normalised == "foil":
+            return cls.FOIL
+        if normalised == "etched":
+            return cls.ETCHED
+        return cls.NONE
 
 
 @dataclass(frozen=True)

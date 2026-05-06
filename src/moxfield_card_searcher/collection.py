@@ -10,12 +10,6 @@ from moxfield_card_searcher.domain import CollectionEntry, FoilKind
 if TYPE_CHECKING:
     from moxfield_card_searcher.web.db import CardRow
 
-_FOIL_MAP = {
-    "": FoilKind.NONE,
-    "foil": FoilKind.FOIL,
-    "etched": FoilKind.ETCHED,
-}
-
 
 def _normalise_name_key(raw: str) -> str:
     return unicodedata.normalize("NFC", raw.strip()).lower()
@@ -32,14 +26,12 @@ class Collection:
             reader = csv.DictReader(f)
             for row in reader:
                 name = row["Name"]
-                foil_raw = (row.get("Foil") or "").strip().lower()
-                foil = _FOIL_MAP.get(foil_raw, FoilKind.NONE)
                 entry = CollectionEntry(
                     name=name,
                     edition=row["Edition"].strip().lower(),
                     collector_number=row["Collector Number"].strip().lower(),
                     count=int(row["Count"]),
-                    foil=foil,
+                    foil=FoilKind.from_str(row.get("Foil") or ""),
                 )
                 index[_normalise_name_key(name)].append(entry)
         return cls(by_name=dict(index))
@@ -53,7 +45,7 @@ class Collection:
                 edition=r.edition,
                 collector_number=r.collector_number,
                 count=r.count,
-                foil=_FOIL_MAP.get(r.foil, FoilKind.NONE),
+                foil=FoilKind.from_str(r.foil),
             )
             index.setdefault(r.name_lower, []).append(entry)
         return cls(by_name=index)
