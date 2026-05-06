@@ -77,3 +77,13 @@ def test_non_hit_returns_empty_strings() -> None:
     headline, detail = narrative_status_for(r)
     assert headline == ""
     assert detail == ""
+
+
+def test_foil_overflow_on_partial_hit() -> None:
+    w = _want(qty=4, set_="cmr", cn="263")
+    r = MatchResult(want=w, tier=MatchTier.PARTIAL_HIT_WITH_SET,
+                    specific_count=1, total_count=2, also_has_foil=3)
+    headline, detail = narrative_status_for(r)
+    assert headline == "Need 2 more"
+    assert "have 1 of 4 (exact printing)" in detail
+    assert "also has 3 foil" in detail

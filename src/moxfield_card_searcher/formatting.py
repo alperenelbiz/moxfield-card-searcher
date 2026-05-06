@@ -6,6 +6,8 @@ no I/O, no template-engine knowledge."""
 
 from __future__ import annotations
 
+from typing import assert_never
+
 from moxfield_card_searcher.domain import MatchResult, MatchTier, WantEntry
 
 _TIER_MARKERS: dict[MatchTier, str] = {
@@ -92,7 +94,7 @@ def narrative_status_for(r: MatchResult) -> tuple[str, str]:
         headline = f"Need {missing} more"
         detail = f"other printing — have {r.total_count} of {r.want.qty}"
     else:
-        return ("", "")
+        assert_never(tier)
 
     if r.also_has_foil > 0:
         detail = f"{detail}; also has {r.also_has_foil} foil"
