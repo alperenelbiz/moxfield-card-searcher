@@ -1,23 +1,21 @@
-<div class="binder-row" id="binder-{{ binder.id }}">
-    <span class="meta">
-        <strong>{{ binder.name }}</strong>
-        <a class="binder-link"
-           href="https://moxfield.com/binders/{{ binder.moxfield_id }}"
+<tr class="binder-row" id="binder-{{ binder.id }}">
+    <td class="name">
+        <a href="https://moxfield.com/binders/{{ binder.moxfield_id }}"
            target="_blank" rel="noopener noreferrer"
-           title="Open on Moxfield">↗</a>
-        {% if binder.created_by_username %}
-        &middot; by {{ binder.created_by_username }}
-        {% endif %}
-        &middot; {{ binder.total_cards }} cards
-        &middot; {{ binder.fetched_at | local_datetime }}
-    </span>
-    <button hx-post="/binders/{{ binder.id }}/refresh"
-            hx-target="closest .binder-row"
-            hx-swap="outerHTML"
-            title="Refresh">🔄</button>
-    <button hx-delete="/binders/{{ binder.id }}"
-            hx-target="closest .binder-row"
-            hx-swap="outerHTML"
-            hx-confirm="Delete this binder?"
-            title="Delete">🗑</button>
-</div>
+           title="Open on Moxfield">{{ binder.name }} ↗</a>
+    </td>
+    <td class="owner">{{ binder.created_by_username or '—' }}</td>
+    <td class="num">{{ binder.total_cards }}</td>
+    <td class="when">{{ binder.fetched_at | local_datetime }}</td>
+    <td class="actions">
+        <button hx-post="/binders/{{ binder.id }}/refresh"
+                hx-target="closest .binder-row"
+                hx-swap="outerHTML"
+                title="Refresh">Refresh</button>
+        <button hx-delete="/binders/{{ binder.id }}"
+                hx-target="closest .binder-row"
+                hx-swap="outerHTML"
+                hx-confirm="Delete this binder?"
+                title="Delete">Delete</button>
+    </td>
+</tr>
