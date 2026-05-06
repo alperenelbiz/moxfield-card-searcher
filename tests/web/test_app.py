@@ -154,6 +154,7 @@ def test_get_jobs_returns_binder_row_when_done(tmp_path: Path) -> None:
     assert r.status_code == 200
     assert "Done Binder" in r.text
     assert "10" in r.text  # entry_count
+    assert 'href="https://moxfield.com/binders/DONE"' in r.text
 
 
 def test_delete_binder_removes_row_and_cards(tmp_path: Path) -> None:

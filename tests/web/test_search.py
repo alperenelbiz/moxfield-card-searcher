@@ -18,6 +18,7 @@ def test_search_via_textarea(seeded_db: Path) -> None:
     assert "Lightning Bolt" in r.text
     assert "Black Lotus" in r.text  # in missing bucket
     assert "lb-m21" in r.text  # image URL pattern uses scryfall_id
+    assert 'href="https://moxfield.com/binders/BULK"' in r.text
 
 
 def test_search_via_file_upload(seeded_db: Path) -> None:

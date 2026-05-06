@@ -4,7 +4,14 @@
 
 {% for group in binder_groups %}
 <section class="search-binder">
-    <h3>{{ group.binder.name }} — {{ group.found_count }}/{{ total_wants }} cards</h3>
+    <h3>
+        {{ group.binder.name }}
+        <a class="binder-link"
+           href="https://moxfield.com/binders/{{ group.binder.moxfield_id }}"
+           target="_blank" rel="noopener noreferrer"
+           title="Open on Moxfield">↗</a>
+        — {{ group.found_count }}/{{ total_wants }} cards
+    </h3>
     {% if group.results %}
     <div class="binder-grid">
         {% for r in group.results %}

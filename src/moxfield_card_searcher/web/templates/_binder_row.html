@@ -1,6 +1,11 @@
 <div class="binder-row" id="binder-{{ binder.id }}">
     <span class="meta">
-        ✓ <strong>{{ binder.name }}</strong> &mdash;
+        ✓ <strong>{{ binder.name }}</strong>
+        <a class="binder-link"
+           href="https://moxfield.com/binders/{{ binder.moxfield_id }}"
+           target="_blank" rel="noopener noreferrer"
+           title="Open on Moxfield">↗</a>
+        &mdash;
         {{ binder.entry_count }} entries
         ({{ binder.total_cards }} cards), fetched {{ binder.fetched_at }}
     </span>
