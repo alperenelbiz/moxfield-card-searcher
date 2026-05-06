@@ -3,6 +3,7 @@
 {% endif %}
 
 {% for group in binder_groups %}
+{% if group.results %}
 <section class="results-group">
     <h3 class="group-head">
         <span class="group-name">
@@ -12,7 +13,6 @@
         </span>
         <span class="group-count">{{ group.found_count }} / {{ total_wants }} cards</span>
     </h3>
-    {% if group.results %}
     <div class="grid">
         {% for r in group.results %}
         <div class="tile">
@@ -35,10 +35,8 @@
         </div>
         {% endfor %}
     </div>
-    {% else %}
-    <p class="notice">(none)</p>
-    {% endif %}
 </section>
+{% endif %}
 {% endfor %}
 
 {% if missing %}
