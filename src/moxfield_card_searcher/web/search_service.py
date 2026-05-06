@@ -48,7 +48,7 @@ def run_search(db_path: Path, wants: list[WantEntry]) -> SearchResult:
 
     _annotate_cross_binder(per_binder_results, binder_to_name)
 
-    missing_lines = [
+    missing_entries = [
         w
         for w in wants
         if not any(
@@ -67,7 +67,7 @@ def run_search(db_path: Path, wants: list[WantEntry]) -> SearchResult:
     ]
     return SearchResult(
         binder_groups=binder_groups,
-        missing=missing_lines,
+        missing=missing_entries,
         total_wants=len(wants),
     )
 

@@ -68,3 +68,17 @@ def test_search_with_no_binders_renders_empty_results(tmp_path: Path) -> None:
     assert r.status_code == 200
     # Lightning Bolt shows up only in the "Not in any binder" bucket.
     assert "Lightning Bolt" in r.text
+
+
+def test_search_missing_entry_with_set_and_foil_renders_set_cell(seeded_db: Path) -> None:
+    client = TestClient(build_app(db_path=seeded_db))
+    # Seed a clearly-missing card with set+cn+foil so the missing-table
+    # set cell exercises the (set, cn) and foil_only branches.
+    r = client.post(
+        "/search",
+        data={"wantlist_text": "1 Imaginary Card (XYZ) 999 *F*\n"},
+    )
+    assert r.status_code == 200
+    assert "Imaginary Card" in r.text
+    # Set cell renders "(XYZ) 999 *F*" — uppercase set, then CN, then foil marker.
+    assert "(XYZ) 999 *F*" in r.text
