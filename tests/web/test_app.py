@@ -1,5 +1,4 @@
 import asyncio
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -7,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from moxfield_card_searcher.web import db
+from moxfield_card_searcher.web._util import iso_now as _now
 from moxfield_card_searcher.web.app import build_app
 
 
@@ -14,10 +14,6 @@ from moxfield_card_searcher.web.app import build_app
 def client(tmp_path: Path) -> TestClient:
     app = build_app(db_path=tmp_path / "test.db")
     return TestClient(app)
-
-
-def _now() -> str:
-    return datetime.now(tz=UTC).isoformat()
 
 
 def test_get_index_returns_200(client: TestClient) -> None:

@@ -1,7 +1,7 @@
 import sqlite3
-from datetime import UTC, datetime
 from pathlib import Path
 
+from moxfield_card_searcher.web._util import iso_now as _now
 from moxfield_card_searcher.web.db import (
     BinderRow,
     CardRow,
@@ -22,10 +22,6 @@ from moxfield_card_searcher.web.db import (
     list_jobs,
     update_job_progress,
 )
-
-
-def _now() -> str:
-    return datetime.now(tz=UTC).isoformat()
 
 
 def test_init_schema_creates_all_tables(tmp_path: Path) -> None:

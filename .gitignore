@@ -30,3 +30,6 @@ Thumbs.db
 binders.db
 binders.db-wal
 binders.db-shm
+
+# Personal planning artifacts kept out of the public repo.
+/docs/

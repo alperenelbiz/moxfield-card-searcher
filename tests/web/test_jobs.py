@@ -1,18 +1,14 @@
 import asyncio
 import json
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from moxfield_card_searcher.binder_fetcher import PageResult
 from moxfield_card_searcher.web import db
+from moxfield_card_searcher.web._util import iso_now as _now
 from moxfield_card_searcher.web.jobs import run_fetch_job, run_refresh_job
 
 FIXTURES = Path(__file__).parent / "fixtures"
-
-
-def _now() -> str:
-    return datetime.now(tz=UTC).isoformat()
 
 
 def _load_pages() -> list[PageResult]:
