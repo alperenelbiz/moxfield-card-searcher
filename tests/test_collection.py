@@ -4,6 +4,7 @@ import pytest
 
 from moxfield_compare.collection import Collection
 from moxfield_compare.models import FoilKind
+from moxfield_compare.web.db import CardRow
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample-collection.csv"
 
@@ -54,3 +55,48 @@ def test_unknown_name_returns_empty_list() -> None:
 def test_missing_file_raises() -> None:
     with pytest.raises(FileNotFoundError):
         Collection.load(Path("/no/such/file.csv"))
+
+
+def test_from_db_rows_builds_lookup_index() -> None:
+    rows = [
+        CardRow(
+            name="Lightning Bolt",
+            name_lower="lightning bolt",
+            edition="m21",
+            collector_number="162",
+            count=2,
+            foil="",
+            scryfall_id=None,
+        ),
+        CardRow(
+            name="Lightning Bolt",
+            name_lower="lightning bolt",
+            edition="2x2",
+            collector_number="117",
+            count=5,
+            foil="",
+            scryfall_id=None,
+        ),
+        CardRow(
+            name="Sol Ring",
+            name_lower="sol ring",
+            edition="cmm",
+            collector_number="410",
+            count=1,
+            foil="etched",
+            scryfall_id=None,
+        ),
+    ]
+    c = Collection.from_db_rows(rows)
+    bolts = c.lookup("lightning bolt")
+    assert len(bolts) == 2
+    editions = {e.edition for e in bolts}
+    assert editions == {"m21", "2x2"}
+    sols = c.lookup("Sol Ring")
+    assert len(sols) == 1
+    assert sols[0].foil is FoilKind.ETCHED
+
+
+def test_from_db_rows_handles_empty_input() -> None:
+    c = Collection.from_db_rows([])
+    assert c.lookup("anything") == []

@@ -7,12 +7,21 @@ dependencies = []
 
 [project.scripts]
 moxfield-compare = "moxfield_compare.cli:main"
+moxfield-compare-ui = "moxfield_compare.web.app:run"
 
 [dependency-groups]
 dev = [
     "pytest>=8",
     "pyright>=1.1",
     "ruff>=0.6",
+]
+ui = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "jinja2>=3.1",
+    "cloudscraper>=1.2.71",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27",
 ]
 
 [build-system]
@@ -29,11 +38,20 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+extend-exclude = ["scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM"]
 
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.File", "fastapi.Form", "fastapi.Depends"]
+
 [tool.pyright]
 include = ["src", "tests"]
+exclude = ["src/moxfield_compare/web/static"]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
+# FastAPI registers route handlers via decorator side-effect; pyright sees
+# the inner functions as unused. Disabling project-wide is cleaner than
+# scattering per-line ignores across every route in web/app.py.
+reportUnusedFunction = false
