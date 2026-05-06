@@ -2,7 +2,7 @@ import re
 import unicodedata
 from pathlib import Path
 
-from moxfield_compare.models import WantEntry
+from moxfield_card_searcher.models import WantEntry
 
 _WS_RUN = re.compile(r"\s+")
 _LINE = re.compile(

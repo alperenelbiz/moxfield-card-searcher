@@ -1,6 +1,6 @@
-from moxfield_compare.collection import Collection
-from moxfield_compare.matcher import match
-from moxfield_compare.models import (
+from moxfield_card_searcher.collection import Collection
+from moxfield_card_searcher.matcher import match
+from moxfield_card_searcher.models import (
     CollectionEntry,
     FoilKind,
     MatchTier,

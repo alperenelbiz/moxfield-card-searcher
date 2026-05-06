@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from moxfield_compare.cli import main
+from moxfield_card_searcher.cli import main
 
 FIXTURE_LIST = Path(__file__).parent / "fixtures" / "sample-list.txt"
 FIXTURE_CSV = Path(__file__).parent / "fixtures" / "sample-collection.csv"

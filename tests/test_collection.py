@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from moxfield_compare.collection import Collection
-from moxfield_compare.models import FoilKind
-from moxfield_compare.web.db import CardRow
+from moxfield_card_searcher.collection import Collection
+from moxfield_card_searcher.models import FoilKind
+from moxfield_card_searcher.web.db import CardRow
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample-collection.csv"
 

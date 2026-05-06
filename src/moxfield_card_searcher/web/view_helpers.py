@@ -4,7 +4,7 @@ so the formatting logic is unit-testable in isolation."""
 
 from __future__ import annotations
 
-from moxfield_compare.models import MatchResult, MatchTier, WantEntry
+from moxfield_card_searcher.models import MatchResult, MatchTier, WantEntry
 
 
 def marker_for(tier: MatchTier) -> str:

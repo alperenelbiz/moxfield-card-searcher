@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from moxfield_compare.web.db._rows import BinderRow, CardRow
+from moxfield_card_searcher.web.db._rows import BinderRow, CardRow
 
 
 def create_binder(

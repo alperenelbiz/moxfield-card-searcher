@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from moxfield_compare.models import CollectionEntry, FoilKind
+from moxfield_card_searcher.models import CollectionEntry, FoilKind
 
 if TYPE_CHECKING:
-    from moxfield_compare.web.db import CardRow
+    from moxfield_card_searcher.web.db import CardRow
 
 _FOIL_MAP = {
     "": FoilKind.NONE,

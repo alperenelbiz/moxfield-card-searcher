@@ -4,9 +4,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from moxfield_compare.binder_fetcher import PageResult
-from moxfield_compare.web import db
-from moxfield_compare.web.jobs import run_fetch_job, run_refresh_job
+from moxfield_card_searcher.binder_fetcher import PageResult
+from moxfield_card_searcher.web import db
+from moxfield_card_searcher.web.jobs import run_fetch_job, run_refresh_job
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

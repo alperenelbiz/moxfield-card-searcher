@@ -2,10 +2,10 @@ import argparse
 import sys
 from pathlib import Path
 
-from moxfield_compare.collection import Collection
-from moxfield_compare.matcher import match
-from moxfield_compare.models import MatchResult, MatchTier, WantEntry
-from moxfield_compare.parser import parse_list
+from moxfield_card_searcher.collection import Collection
+from moxfield_card_searcher.matcher import match
+from moxfield_card_searcher.models import MatchResult, MatchTier, WantEntry
+from moxfield_card_searcher.parser import parse_list
 
 _TIER_FILENAMES: dict[MatchTier, str] = {
     MatchTier.HIT_WITH_SET: "hits-with-set.txt",
@@ -56,7 +56,7 @@ def _annotation(result: MatchResult) -> str:
 
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="moxfield-compare",
+        prog="moxfield-card-searcher",
         description="Compare a card list against a Moxfield collection CSV.",
     )
     p.add_argument("list_path", type=Path)

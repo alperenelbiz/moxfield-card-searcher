@@ -1,5 +1,5 @@
 """Fetch a public Moxfield trade binder and emit a CSV in the format
-moxfield-compare's CLI consumes (Moxfield collection export shape).
+moxfield-card-searcher's CLI consumes (Moxfield collection export shape).
 
 Run after `uv sync --group ui`:
 
@@ -9,7 +9,7 @@ Where <binder-public-id> is the trailing path segment of a binder URL like
 https://moxfield.com/binders/YR6dKVcP8UK9Hg2qnSOsbA — the ID is "YR6...bA".
 
 This script delegates the API + Cloudflare handshake to
-`moxfield_compare.binder_fetcher`; the only script-specific code here is the
+`moxfield_card_searcher.binder_fetcher`; the only script-specific code here is the
 mapping from a Moxfield API entry to a Moxfield CSV row.
 """
 
@@ -20,7 +20,7 @@ import csv
 import sys
 from typing import Any
 
-from moxfield_compare.binder_fetcher import (
+from moxfield_card_searcher.binder_fetcher import (
     extract_binder_id,
     fetch_pages,
     make_scraper,

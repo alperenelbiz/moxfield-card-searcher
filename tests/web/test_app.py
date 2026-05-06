@@ -6,8 +6,8 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from moxfield_compare.web import db
-from moxfield_compare.web.app import build_app
+from moxfield_card_searcher.web import db
+from moxfield_card_searcher.web.app import build_app
 
 
 @pytest.fixture
@@ -47,8 +47,8 @@ def test_post_binders_creates_pending_job_and_starts_fetch(
     ) -> None:
         started.append(job_id)
 
-    from moxfield_compare.web import app as app_module
-    from moxfield_compare.web import routes as routes_module
+    from moxfield_card_searcher.web import app as app_module
+    from moxfield_card_searcher.web import routes as routes_module
 
     monkeypatch.setattr(routes_module, "run_fetch_job", fake_runner)
 
@@ -81,7 +81,7 @@ def test_post_binders_rejects_existing_binder(tmp_path: Path) -> None:
             total_cards=0,
         )
 
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
@@ -93,7 +93,7 @@ def test_post_binders_rejects_existing_binder(tmp_path: Path) -> None:
 
 def test_post_binders_rejects_empty_input(tmp_path: Path) -> None:
     db_path = tmp_path / "test.db"
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
@@ -120,7 +120,7 @@ def test_get_jobs_returns_job_row_when_in_progress(tmp_path: Path) -> None:
             updated_at=_now(),
         )
 
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
@@ -150,7 +150,7 @@ def test_get_jobs_returns_binder_row_when_done(tmp_path: Path) -> None:
         )
         db.finish_job(conn, job_id, updated_at=_now())
 
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
@@ -188,7 +188,7 @@ def test_delete_binder_removes_row_and_cards(tmp_path: Path) -> None:
             ],
         )
 
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
@@ -205,7 +205,7 @@ def test_delete_binder_removes_row_and_cards(tmp_path: Path) -> None:
 
 def test_delete_nonexistent_binder_returns_404(tmp_path: Path) -> None:
     db_path = tmp_path / "test.db"
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
@@ -242,8 +242,8 @@ def test_refresh_binder_creates_refresh_job(
     ) -> None:
         started.append((job_id, existing_binder_id))
 
-    from moxfield_compare.web import app as app_module
-    from moxfield_compare.web import routes as routes_module
+    from moxfield_card_searcher.web import app as app_module
+    from moxfield_card_searcher.web import routes as routes_module
 
     monkeypatch.setattr(routes_module, "run_refresh_job", fake_refresh)
     app = app_module.build_app(db_path=db_path)
@@ -277,7 +277,7 @@ def test_refresh_conflict_when_job_already_active(tmp_path: Path) -> None:
             created_at=_now(),
         )
 
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
@@ -287,7 +287,7 @@ def test_refresh_conflict_when_job_already_active(tmp_path: Path) -> None:
 
 def test_refresh_404_for_nonexistent_binder(tmp_path: Path) -> None:
     db_path = tmp_path / "test.db"
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
@@ -314,7 +314,7 @@ def test_cancel_job_marks_cancelled(tmp_path: Path) -> None:
             updated_at=_now(),
         )
 
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
@@ -328,7 +328,7 @@ def test_cancel_job_marks_cancelled(tmp_path: Path) -> None:
 
 
 def test_run_argument_parsing(monkeypatch: pytest.MonkeyPatch) -> None:
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     captured: dict[str, Any] = {}
 
@@ -348,7 +348,7 @@ def test_run_argument_parsing(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_run_uses_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
-    from moxfield_compare.web import app as app_module
+    from moxfield_card_searcher.web import app as app_module
 
     captured: dict[str, Any] = {}
 
@@ -362,9 +362,9 @@ def test_run_uses_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     fake_module.run = fake_uvicorn_run  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "uvicorn", fake_module)
 
-    monkeypatch.setenv("MOXFIELD_COMPARE_HOST", "10.0.0.1")
-    monkeypatch.setenv("MOXFIELD_COMPARE_PORT", "9100")
-    monkeypatch.setenv("MOXFIELD_COMPARE_DB", "/tmp/y.db")
+    monkeypatch.setenv("MOXFIELD_CARD_SEARCHER_HOST", "10.0.0.1")
+    monkeypatch.setenv("MOXFIELD_CARD_SEARCHER_PORT", "9100")
+    monkeypatch.setenv("MOXFIELD_CARD_SEARCHER_DB", "/tmp/y.db")
     app_module.run([])
     assert captured["host"] == "10.0.0.1"
     assert captured["port"] == 9100

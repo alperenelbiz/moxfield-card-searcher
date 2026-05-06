@@ -1,4 +1,4 @@
-# moxfield-compare
+# moxfield-card-searcher
 
 Compare a Magic: The Gathering card list against a [Moxfield](https://www.moxfield.com)
 collection CSV export. Each entry is classified into one of five tiers and
@@ -13,7 +13,7 @@ uv sync
 ## Usage
 
 ```bash
-uv run moxfield-compare <list.txt> <collection.csv> [--out-dir DIR]
+uv run moxfield-card-searcher <list.txt> <collection.csv> [--out-dir DIR]
 ```
 
 `<list.txt>` is one entry per line. Recognised forms:
@@ -53,12 +53,12 @@ opt-in feature for users who prefer paste-and-click ergonomics.
 
 ```bash
 uv sync --group ui
-uv run --group ui moxfield-compare-ui [--host ...] [--port ...] [--db ...]
+uv run --group ui moxfield-card-searcher-ui [--host ...] [--port ...] [--db ...]
 ```
 
 By default the server binds to `127.0.0.1:8000` and stores binders in
 `./binders.db`. Override with `--host`, `--port`, `--db`, or the corresponding
-`MOXFIELD_COMPARE_HOST`, `MOXFIELD_COMPARE_PORT`, `MOXFIELD_COMPARE_DB`
+`MOXFIELD_CARD_SEARCHER_HOST`, `MOXFIELD_CARD_SEARCHER_PORT`, `MOXFIELD_CARD_SEARCHER_DB`
 environment variables. See `.env.example` for the variable list.
 
 The UI is single-user, local-only, and has no authentication. Do not bind it

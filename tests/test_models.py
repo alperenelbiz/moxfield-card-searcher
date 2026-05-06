@@ -1,4 +1,4 @@
-from moxfield_compare.models import (
+from moxfield_card_searcher.models import (
     CollectionEntry,
     FoilKind,
     MatchResult,

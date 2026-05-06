@@ -9,7 +9,7 @@ from typing import Any, Protocol, cast
 
 import cloudscraper  # pyright: ignore[reportMissingTypeStubs]
 
-from moxfield_compare.web.db import CardRow
+from moxfield_card_searcher.web.db import CardRow
 
 _API_TEMPLATE = "https://api2.moxfield.com/v1/trade-binders/{binder_id}"
 _PAGE_SIZE = 100

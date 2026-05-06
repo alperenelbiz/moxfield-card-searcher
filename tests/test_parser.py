@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from moxfield_compare.parser import parse_list
+from moxfield_card_searcher.parser import parse_list
 
 
 def write(tmp_path: Path, content: str) -> Path:

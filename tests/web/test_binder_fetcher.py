@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from moxfield_compare.binder_fetcher import (
+from moxfield_card_searcher.binder_fetcher import (
     PageResult,
     entry_to_card_row,
     extract_binder_id,

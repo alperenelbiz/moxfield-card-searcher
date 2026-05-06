@@ -291,7 +291,7 @@ wheels = [
 ]
 
 [[package]]
-name = "moxfield-compare"
+name = "moxfield-card-searcher"
 version = "0.1.0"
 source = { editable = "." }
 

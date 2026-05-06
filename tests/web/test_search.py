@@ -4,8 +4,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from moxfield_compare.web import db
-from moxfield_compare.web.app import build_app
+from moxfield_card_searcher.web import db
+from moxfield_card_searcher.web.app import build_app
 
 
 def _now() -> str:

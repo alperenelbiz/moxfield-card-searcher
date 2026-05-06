@@ -2,7 +2,7 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-from moxfield_compare.web.db import (
+from moxfield_card_searcher.web.db import (
     BinderRow,
     CardRow,
     JobRow,

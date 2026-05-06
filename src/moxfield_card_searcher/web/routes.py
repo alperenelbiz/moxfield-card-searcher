@@ -1,4 +1,4 @@
-"""HTTP route handlers for the moxfield-compare web UI.
+"""HTTP route handlers for the moxfield-card-searcher web UI.
 
 `register_routes` attaches all routes to a given FastAPI app. Tests that
 need to stub the background workers monkeypatch `run_fetch_job` /
@@ -16,15 +16,15 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from moxfield_compare.binder_fetcher import extract_binder_id, make_scraper
-from moxfield_compare.collection import Collection
-from moxfield_compare.matcher import match
-from moxfield_compare.models import MatchTier
-from moxfield_compare.parser import parse_list_text
-from moxfield_compare.web import db
-from moxfield_compare.web._util import iso_now
-from moxfield_compare.web.jobs import run_fetch_job, run_refresh_job
-from moxfield_compare.web.view_helpers import (
+from moxfield_card_searcher.binder_fetcher import extract_binder_id, make_scraper
+from moxfield_card_searcher.collection import Collection
+from moxfield_card_searcher.matcher import match
+from moxfield_card_searcher.models import MatchTier
+from moxfield_card_searcher.parser import parse_list_text
+from moxfield_card_searcher.web import db
+from moxfield_card_searcher.web._util import iso_now
+from moxfield_card_searcher.web.jobs import run_fetch_job, run_refresh_job
+from moxfield_card_searcher.web.view_helpers import (
     annotation_for,
     format_want_line,
     marker_for,
