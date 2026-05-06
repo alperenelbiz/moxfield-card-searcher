@@ -1,0 +1,44 @@
+{
+  "totalOverall": 6,
+  "totalResults": 3,
+  "isEmpty": false,
+  "tradeBinder": {
+    "id": "1",
+    "publicId": "TESTBINDER",
+    "name": "Test Binder",
+    "description": "fixture"
+  },
+  "pageNumber": 1,
+  "pageSize": 100,
+  "totalPages": 2,
+  "data": [
+    {
+      "id": "e1",
+      "quantity": 4,
+      "condition": "nearMint",
+      "finish": "nonFoil",
+      "isFoil": false,
+      "language": {"name": "English"},
+      "card": {
+        "scryfall_id": "abc-001",
+        "set": "m21",
+        "name": "Lightning Bolt",
+        "cn": "162"
+      }
+    },
+    {
+      "id": "e2",
+      "quantity": 1,
+      "condition": "nearMint",
+      "finish": "foil",
+      "isFoil": true,
+      "language": {"name": "English"},
+      "card": {
+        "scryfall_id": "abc-002",
+        "set": "sld",
+        "name": "Lightning Bolt",
+        "cn": "42"
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "totalOverall": 6,
+  "totalResults": 3,
+  "isEmpty": false,
+  "tradeBinder": {
+    "id": "1",
+    "publicId": "TESTBINDER",
+    "name": "Test Binder"
+  },
+  "pageNumber": 2,
+  "pageSize": 100,
+  "totalPages": 2,
+  "data": [
+    {
+      "id": "e3",
+      "quantity": 2,
+      "condition": "nearMint",
+      "finish": "etched",
+      "isFoil": false,
+      "language": {"name": "English"},
+      "card": {
+        "scryfall_id": "abc-003",
+        "set": "cmm",
+        "name": "Sol Ring",
+        "cn": "410"
+      }
+    }
+  ]
+}
