@@ -16,6 +16,9 @@ _API_TEMPLATE = "https://api2.moxfield.com/v1/trade-binders/{binder_id}"
 _PAGE_SIZE = 100
 _PACING_SECONDS = 0.4
 _REQUEST_TIMEOUT = 30
+# Moxfield occasionally returns 0 or omits ``totalPages`` for tiny binders;
+# treat those as "at least one page so we still process the response we got".
+_FALLBACK_TOTAL_PAGES = 1
 
 _BINDER_URL_RE = re.compile(r"/binders/([A-Za-z0-9_-]+)")
 
@@ -83,7 +86,8 @@ def fetch_pages(
         r.raise_for_status()
         payload = cast(dict[str, Any], r.json())
         if page == 1:
-            total_pages = int(payload.get("totalPages") or 0) or 1
+            reported_total = int(payload.get("totalPages") or 0)
+            total_pages = reported_total if reported_total > 0 else _FALLBACK_TOTAL_PAGES
             trade_binder = cast(dict[str, Any], payload.get("tradeBinder") or {})
             binder_name = str(trade_binder.get("name", ""))
         entries = cast(list[dict[str, Any]], payload.get("data") or [])
