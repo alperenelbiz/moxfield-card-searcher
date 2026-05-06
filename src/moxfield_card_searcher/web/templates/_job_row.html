@@ -1,23 +1,31 @@
-<div class="job-row {{ 'failed' if job.status == 'failed' else '' }}"
-     id="job-{{ job.id }}"
-     {% if job.status in ('pending', 'fetching') %}
-     hx-get="/jobs/{{ job.id }}"
-     hx-trigger="every 2s"
-     hx-swap="outerHTML"
-     {% endif %}>
+<tr class="job-row {% if job.status == 'failed' %}failed{% elif job.status == 'cancelled' %}cancelled{% else %}fetching{% endif %}"
+    id="job-{{ job.id }}"
+    {% if job.status in ('pending', 'fetching') %}
+    hx-get="/jobs/{{ job.id }}"
+    hx-trigger="every 2s"
+    hx-swap="outerHTML"
+    {% endif %}>
     {% if job.status == 'failed' %}
-        ✗ <strong>{{ job.moxfield_id }}</strong> — failed: {{ job.error_message }}
+        <td class="name">{{ job.moxfield_id }}</td>
+        <td colspan="3" class="error">failed: {{ job.error_message }}</td>
+        <td class="actions"></td>
     {% elif job.status == 'cancelled' %}
-        ⊗ <strong>{{ job.moxfield_id }}</strong> — cancelled
+        <td class="name">{{ job.moxfield_id }}</td>
+        <td colspan="3" class="cancelled">cancelled</td>
+        <td class="actions"></td>
     {% else %}
-        🔄 <strong>{{ job.moxfield_id }}</strong> —
-        {% if job.pages_total > 0 %}
-            {{ job.pages_done }}/{{ job.pages_total }} ({{ job.progress_pct }}%)
-        {% else %}
-            pending…
-        {% endif %}
-        <button hx-post="/jobs/{{ job.id }}/cancel"
-                hx-target="closest .job-row"
-                hx-swap="outerHTML">✕ cancel</button>
+        <td class="name">{{ job.moxfield_id }}</td>
+        <td>—</td>
+        <td class="num">
+            {% if job.pages_total > 0 %}{{ job.pages_done }} / {{ job.pages_total }} pages{% else %}pending…{% endif %}
+        </td>
+        <td class="when">
+            {% if job.pages_total > 0 %}fetching · {{ job.progress_pct }}%{% else %}fetching…{% endif %}
+        </td>
+        <td class="actions">
+            <button hx-post="/jobs/{{ job.id }}/cancel"
+                    hx-target="closest .job-row"
+                    hx-swap="outerHTML">Cancel</button>
+        </td>
     {% endif %}
-</div>
+</tr>
