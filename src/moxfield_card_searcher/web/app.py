@@ -7,6 +7,7 @@ templates, static files, and the argparse + uvicorn launcher.
 from __future__ import annotations
 
 import argparse
+import asyncio
 import logging
 import os
 from pathlib import Path
@@ -29,6 +30,9 @@ def build_app(*, db_path: Path) -> FastAPI:
     db.init_schema(db_path)
     app = FastAPI()
     app.state.db_path = db_path
+    # asyncio doesn't keep strong references to tasks; without this set the
+    # interpreter is free to garbage-collect a still-running fetch worker.
+    app.state.background_tasks = set[asyncio.Task[None]]()
     templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
     register_routes(app, db_path=db_path, templates=templates)

@@ -9,7 +9,9 @@ module scope rather than locally inside `register_routes`.
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Coroutine
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
@@ -21,6 +23,15 @@ from moxfield_card_searcher.web import db
 from moxfield_card_searcher.web._util import iso_now
 from moxfield_card_searcher.web.jobs import run_fetch_job, run_refresh_job
 from moxfield_card_searcher.web.search_service import run_search
+
+
+def _spawn_background(app: FastAPI, coro: Coroutine[Any, Any, None]) -> None:
+    """Schedule a worker coroutine and keep a strong reference until it
+    finishes. Without the set membership, asyncio is free to garbage-collect
+    the task mid-flight (see asyncio.create_task docs)."""
+    task = asyncio.create_task(coro)
+    app.state.background_tasks.add(task)
+    task.add_done_callback(app.state.background_tasks.discard)
 
 
 def register_routes(
@@ -58,13 +69,14 @@ def register_routes(
             )
             job = db.get_job(conn, job_id)
         scraper = make_scraper(binder_id)
-        asyncio.create_task(
+        _spawn_background(
+            app,
             run_fetch_job(
                 db_path=db_path,
                 job_id=job_id,
                 binder_id=binder_id,
                 scraper=scraper,
-            )
+            ),
         )
         return templates.TemplateResponse(request, "_job_row.html", {"job": job})
 
@@ -110,14 +122,15 @@ def register_routes(
             )
             job = db.get_job(conn, job_id)
         scraper = make_scraper(mox_id)
-        asyncio.create_task(
+        _spawn_background(
+            app,
             run_refresh_job(
                 db_path=db_path,
                 job_id=job_id,
                 binder_id=mox_id,
                 existing_binder_id=binder_id,
                 scraper=scraper,
-            )
+            ),
         )
         return templates.TemplateResponse(request, "_job_row.html", {"job": job})
 
