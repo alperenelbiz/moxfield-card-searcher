@@ -1,4 +1,4 @@
-<tr class="job-row {% if job.status == 'failed' %}failed{% elif job.status == 'cancelled' %}cancelled{% else %}fetching{% endif %}"
+<tr class="job-row {% if job.status == 'failed' %}failed{% elif job.status == 'cancelled' %}cancelled{% elif job.status == 'pending' %}pending{% else %}fetching{% endif %}"
     id="job-{{ job.id }}"
     {% if job.status in ('pending', 'fetching') %}
     hx-get="/jobs/{{ job.id }}"
@@ -15,7 +15,7 @@
         <td class="actions"></td>
     {% else %}
         <td class="name">{{ job.moxfield_id }}</td>
-        <td>—</td>
+        <td class="owner">—</td>
         <td class="num">
             {% if job.pages_total > 0 %}{{ job.pages_done }} / {{ job.pages_total }} pages{% else %}pending…{% endif %}
         </td>
