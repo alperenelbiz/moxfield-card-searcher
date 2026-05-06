@@ -10,25 +10,17 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from moxfield_card_searcher.binder_fetcher import extract_binder_id, make_scraper
-from moxfield_card_searcher.collection import Collection
-from moxfield_card_searcher.matcher import match
-from moxfield_card_searcher.models import MatchTier
 from moxfield_card_searcher.parser import parse_list_text
 from moxfield_card_searcher.web import db
 from moxfield_card_searcher.web._util import iso_now
 from moxfield_card_searcher.web.jobs import run_fetch_job, run_refresh_job
-from moxfield_card_searcher.web.view_helpers import (
-    annotation_for,
-    format_want_line,
-    marker_for,
-)
+from moxfield_card_searcher.web.search_service import run_search
 
 
 def register_routes(
@@ -176,74 +168,14 @@ def register_routes(
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
 
-        with db.connect(db_path) as conn:
-            binders = db.list_binders(conn)
-            per_binder_results: dict[int, list[dict[str, Any]]] = {}
-            binder_to_name: dict[int, str] = {}
-            for b in binders:
-                binder_to_name[b.id] = b.name
-                cards = db.list_cards(conn, b.id)
-                collection = Collection.from_db_rows(cards)
-                scryfall_index: dict[tuple[str, str, str], str | None] = {
-                    (c.name_lower, c.edition, c.collector_number): c.scryfall_id for c in cards
-                }
-                results: list[dict[str, Any]] = []
-                for w in wants:
-                    res = match(w, collection)
-                    if res.tier is MatchTier.NON_HIT:
-                        continue
-                    sid: str | None = None
-                    if w.set and w.cn:
-                        sid = scryfall_index.get((w.name, w.set, w.cn))
-                    if sid is None:
-                        sid = next(
-                            (sc for (n, _, _), sc in scryfall_index.items() if n == w.name),
-                            None,
-                        )
-                    results.append(
-                        {
-                            "tier": res.tier,
-                            "marker": marker_for(res.tier),
-                            "name": w.display_name,
-                            "scryfall_id": sid,
-                            "annotation": annotation_for(res),
-                            "also_in": [],
-                        }
-                    )
-                per_binder_results[b.id] = results
-
-        name_to_binders: dict[str, set[int]] = {}
-        for bid, results in per_binder_results.items():
-            for r in results:
-                name_to_binders.setdefault(r["name"], set()).add(bid)
-        for bid, results in per_binder_results.items():
-            for r in results:
-                others = name_to_binders.get(r["name"], set()) - {bid}
-                r["also_in"] = sorted(binder_to_name[oid] for oid in others)
-
-        missing_lines: list[str] = []
-        for w in wants:
-            present = any(
-                any(r["name"] == w.display_name for r in per_binder_results[b.id]) for b in binders
-            )
-            if not present:
-                missing_lines.append(format_want_line(w))
-
-        binder_groups = [
-            {
-                "binder": b,
-                "results": per_binder_results[b.id],
-                "found_count": len(per_binder_results[b.id]),
-            }
-            for b in binders
-        ]
+        result = run_search(db_path, wants)
         return templates.TemplateResponse(
             request,
             "_search_results.html",
             {
-                "binder_groups": binder_groups,
-                "missing": missing_lines,
-                "total_wants": len(wants),
+                "binder_groups": result.binder_groups,
+                "missing": result.missing,
+                "total_wants": result.total_wants,
                 "file_overrode_text": file_overrode_text,
             },
         )
