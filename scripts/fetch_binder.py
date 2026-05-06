@@ -1,25 +1,16 @@
-# /// script
-# requires-python = ">=3.13"
-# dependencies = [
-#     "cloudscraper>=1.2.71",
-# ]
-# ///
 """Fetch a public Moxfield trade binder and emit a CSV in the format
-moxfield-compare expects.
+moxfield-compare's CLI consumes (Moxfield collection export shape).
 
-This script declares its own dependencies via PEP 723 inline metadata so it
-does not pollute the core moxfield-compare package, which stays stdlib-only.
-``uv run`` resolves the inline deps into an isolated environment automatically.
+Run after `uv sync --group ui`:
 
-Usage:
     uv run scripts/fetch_binder.py <binder-public-id> <output.csv> [--limit-pages N]
 
 Where <binder-public-id> is the trailing path segment of a binder URL like
 https://moxfield.com/binders/YR6dKVcP8UK9Hg2qnSOsbA — the ID is "YR6...bA".
 
-The Moxfield API sits behind Cloudflare, so we use cloudscraper to negotiate the
-challenge. Pages are fetched at 100 entries each (the server cap) with a small
-delay between requests.
+This script delegates the API + Cloudflare handshake to
+`moxfield_compare.binder_fetcher`; the only script-specific code here is the
+mapping from a Moxfield API entry to a Moxfield CSV row.
 """
 
 from __future__ import annotations
@@ -27,21 +18,13 @@ from __future__ import annotations
 import argparse
 import csv
 import sys
-import time
 from typing import Any
 
-import cloudscraper
-
-API_TEMPLATE = "https://api2.moxfield.com/v1/trade-binders/{binder_id}"
-PAGE_SIZE = 100
-PACING_SECONDS = 0.4
-REQUEST_TIMEOUT = 30
-
-FINISH_TO_FOIL = {
-    "nonFoil": "",
-    "foil": "foil",
-    "etched": "etched",
-}
+from moxfield_compare.binder_fetcher import (
+    extract_binder_id,
+    fetch_pages,
+    make_scraper,
+)
 
 CONDITION_TO_CSV = {
     "nearMint": "NM",
@@ -49,6 +32,12 @@ CONDITION_TO_CSV = {
     "moderatelyPlayed": "MP",
     "heavilyPlayed": "HP",
     "damaged": "DMG",
+}
+
+FINISH_TO_CSV_FOIL = {
+    "nonFoil": "",
+    "foil": "foil",
+    "etched": "etched",
 }
 
 CSV_COLUMNS = [
@@ -68,39 +57,11 @@ CSV_COLUMNS = [
 ]
 
 
-def make_scraper(binder_id: str) -> cloudscraper.CloudScraper:
-    s = cloudscraper.create_scraper(
-        browser={"browser": "chrome", "platform": "darwin", "desktop": True},
-    )
-    s.headers.update(
-        {
-            "Accept": "application/json, text/plain, */*",
-            "Origin": "https://moxfield.com",
-            "Referer": f"https://moxfield.com/binders/{binder_id}",
-            "User-Agent": (
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/127.0.0.0 Safari/537.36"
-            ),
-        }
-    )
-    return s
-
-
-def fetch_page(scraper: cloudscraper.CloudScraper, binder_id: str, page: int) -> dict[str, Any]:
-    r = scraper.get(
-        API_TEMPLATE.format(binder_id=binder_id),
-        params={"pageNumber": page, "pageSize": PAGE_SIZE},
-        timeout=REQUEST_TIMEOUT,
-    )
-    r.raise_for_status()
-    return r.json()
-
-
-def entry_to_row(entry: dict[str, Any]) -> dict[str, str]:
+def entry_to_csv_row(entry: dict[str, Any]) -> dict[str, str]:
+    """Map one Moxfield API entry to a Moxfield collection CSV row."""
     card = entry.get("card") or {}
     finish = entry.get("finish", "nonFoil")
-    foil = FINISH_TO_FOIL.get(finish, "")
+    foil = FINISH_TO_CSV_FOIL.get(finish, "")
 
     last_modified = entry.get("lastUpdatedAtUtc") or entry.get("createdAtUtc") or ""
     if last_modified.endswith("Z"):
@@ -130,7 +91,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Fetch a Moxfield binder as CSV.")
     ap.add_argument(
         "binder_id",
-        help="Binder public ID (last path segment of /binders/<id>)",
+        help="Binder public ID or full URL (https://moxfield.com/binders/<id>)",
     )
     ap.add_argument("output_csv", help="Path to write CSV")
     ap.add_argument(
@@ -141,37 +102,37 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    scraper = make_scraper(args.binder_id)
+    binder_id = extract_binder_id(args.binder_id)
+    scraper = make_scraper(binder_id)
 
     print("Fetching page 1 to discover total pages...", file=sys.stderr)
-    first = fetch_page(scraper, args.binder_id, 1)
-    binder_meta = first.get("tradeBinder") or {}
-    total_pages = int(first.get("totalPages") or 0)
-    total_results = int(first.get("totalResults") or 0)
-    print(
-        f"Binder: {binder_meta.get('name', '?')!r} "
-        f"({total_results} entries across {total_pages} pages)",
-        file=sys.stderr,
-    )
-    if args.limit_pages is not None:
-        total_pages = min(total_pages, args.limit_pages)
-
-    rows: list[dict[str, str]] = [entry_to_row(e) for e in first.get("data", [])]
-    for page in range(2, total_pages + 1):
-        time.sleep(PACING_SECONDS)
-        try:
-            payload = fetch_page(scraper, args.binder_id, page)
-        except Exception as exc:
-            print(f"\n  ERROR on page {page}: {exc}", file=sys.stderr)
-            print("  Aborting; partial CSV will not be written.", file=sys.stderr)
-            return 2
-        rows.extend(entry_to_row(e) for e in payload.get("data", []))
-        print(
-            f"\r  page {page}/{total_pages} ({len(rows)} rows so far)",
-            end="",
-            file=sys.stderr,
-            flush=True,
-        )
+    rows: list[dict[str, str]] = []
+    binder_name = ""
+    pages_total = 0
+    try:
+        for page in fetch_pages(scraper, binder_id):
+            if args.limit_pages is not None and page.page_number > args.limit_pages:
+                break
+            if page.page_number == 1:
+                binder_name = page.binder_name
+                pages_total = page.total_pages
+                if args.limit_pages is not None:
+                    pages_total = min(pages_total, args.limit_pages)
+                print(
+                    f"Binder: {binder_name!r} ({pages_total} pages to fetch)",
+                    file=sys.stderr,
+                )
+            rows.extend(entry_to_csv_row(e) for e in page.entries)
+            print(
+                f"\r  page {page.page_number}/{pages_total} ({len(rows)} rows so far)",
+                end="",
+                file=sys.stderr,
+                flush=True,
+            )
+    except Exception as exc:
+        print(f"\n  ERROR: {exc}", file=sys.stderr)
+        print("  Aborting; partial CSV will not be written.", file=sys.stderr)
+        return 2
     print("", file=sys.stderr)
 
     with open(args.output_csv, "w", encoding="utf-8", newline="") as f:

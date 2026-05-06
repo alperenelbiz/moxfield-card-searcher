@@ -32,22 +32,19 @@ Lightning Bolt
 
 The core tool needs a CSV. If you already have a Moxfield collection export, use
 that. If you want to compare against **someone else's public binder** (which
-Moxfield does not let you export directly), there is a helper script:
+Moxfield does not let you export directly), there is a helper script that
+shares its fetcher with the web UI:
 
 ```bash
-uv run scripts/fetch_binder.py <binder-id> <output.csv> [--limit-pages N]
+uv sync --group ui
+uv run scripts/fetch_binder.py <binder-id-or-url> <output.csv> [--limit-pages N]
 ```
 
-Where `<binder-id>` is the trailing path segment of a binder URL, e.g. for
-`https://moxfield.com/binders/YR6dKVcP8UK9Hg2qnSOsbA` the ID is
-`YR6dKVcP8UK9Hg2qnSOsbA`.
+`<binder-id>` accepts either the bare ID or a full URL, e.g. either
+`YR6dKVcP8UK9Hg2qnSOsbA` or `https://moxfield.com/binders/YR6dKVcP8UK9Hg2qnSOsbA`.
 
-The script declares its own dependency on `cloudscraper` via
-[PEP 723](https://peps.python.org/pep-0723/) inline metadata, so it does not
-add to the core package's dependencies. `uv run` resolves and caches them in an
-isolated environment automatically. The Moxfield API is rate-limited and sits
-behind Cloudflare, so a typical 12k-entry binder takes about two minutes to
-fetch.
+The Moxfield API is rate-limited and sits behind Cloudflare, so a typical
+12k-entry binder takes about two minutes to fetch.
 
 ## Web UI (optional)
 

@@ -7,6 +7,8 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any, Protocol, cast
 
+import cloudscraper  # pyright: ignore[reportMissingTypeStubs]
+
 from moxfield_compare.web.db import CardRow
 
 _API_TEMPLATE = "https://api2.moxfield.com/v1/trade-binders/{binder_id}"
@@ -21,6 +23,28 @@ _FINISH_TO_FOIL = {
 }
 
 _BINDER_URL_RE = re.compile(r"/binders/([A-Za-z0-9_-]+)")
+
+
+def make_scraper(binder_id: str) -> Any:
+    """Build a cloudscraper session pre-configured with the headers Moxfield's
+    Cloudflare challenge expects. Both the standalone script and the in-process
+    web worker use this."""
+    s: Any = cloudscraper.create_scraper(  # pyright: ignore[reportUnknownMemberType]
+        browser={"browser": "chrome", "platform": "darwin", "desktop": True},
+    )
+    s.headers.update(
+        {
+            "Accept": "application/json, text/plain, */*",
+            "Origin": "https://moxfield.com",
+            "Referer": f"https://moxfield.com/binders/{binder_id}",
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/127.0.0.0 Safari/537.36"
+            ),
+        }
+    )
+    return s
 
 
 @dataclass(frozen=True)
