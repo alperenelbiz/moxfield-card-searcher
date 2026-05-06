@@ -12,13 +12,13 @@ from typing import Any
 
 from moxfield_card_searcher.collection import Collection
 from moxfield_card_searcher.domain import MatchTier, WantEntry
-from moxfield_card_searcher.matcher import match
-from moxfield_card_searcher.web import db
-from moxfield_card_searcher.web.view_helpers import (
+from moxfield_card_searcher.formatting import (
     annotation_for,
     format_want_line,
     marker_for,
 )
+from moxfield_card_searcher.matcher import match
+from moxfield_card_searcher.web import db
 
 
 @dataclass(frozen=True)

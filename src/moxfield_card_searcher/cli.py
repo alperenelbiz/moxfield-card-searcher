@@ -3,7 +3,8 @@ import sys
 from pathlib import Path
 
 from moxfield_card_searcher.collection import Collection
-from moxfield_card_searcher.domain import MatchResult, MatchTier, WantEntry
+from moxfield_card_searcher.domain import MatchTier
+from moxfield_card_searcher.formatting import annotation_for, format_want_line
 from moxfield_card_searcher.matcher import match
 from moxfield_card_searcher.parser import parse_list
 
@@ -14,44 +15,6 @@ _TIER_FILENAMES: dict[MatchTier, str] = {
     MatchTier.PARTIAL_HIT: "partial-hits.txt",
     MatchTier.NON_HIT: "non-hits.txt",
 }
-
-
-def _format_want(want: WantEntry) -> str:
-    parts: list[str] = [str(want.qty), want.display_name]
-    if want.set and want.cn:
-        parts.append(f"({want.set}) {want.cn}")
-    line = " ".join(parts)
-    if want.foil_only:
-        line = f"{line} *F*"
-    return line
-
-
-def _annotation(result: MatchResult) -> str:
-    want = result.want
-    has_set = want.set is not None and want.cn is not None
-    pieces: list[str] = []
-    match result.tier:
-        case MatchTier.HIT_WITH_SET | MatchTier.NON_HIT:
-            pass
-        case MatchTier.PARTIAL_HIT_WITH_SET:
-            need = want.qty - result.total_count
-            pieces.append(
-                f"owned this printing: {result.specific_count}, "
-                f"total: {result.total_count} (need {need} more)"
-            )
-        case MatchTier.HIT:
-            if has_set:
-                pieces.append(
-                    f"owned this printing: {result.specific_count}, total: {result.total_count}"
-                )
-            else:
-                pieces.append(f"total owned: {result.total_count}")
-        case MatchTier.PARTIAL_HIT:
-            need = want.qty - result.total_count
-            pieces.append(f"total owned: {result.total_count} (need {need} more)")
-    if result.also_has_foil > 0:
-        pieces.append(f"also has foil: {result.also_has_foil}")
-    return f"  # {'; '.join(pieces)}" if pieces else ""
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -81,8 +44,9 @@ def main(argv: list[str] | None = None) -> int:
 
     for want in wants:
         result = match(want, collection)
-        line = _format_want(want) + _annotation(result)
-        buckets[result.tier].append(line)
+        annotation = annotation_for(result)
+        suffix = f"  # {annotation}" if annotation else ""
+        buckets[result.tier].append(format_want_line(want) + suffix)
         counts[result.tier] += 1
 
     out_dir.mkdir(parents=True, exist_ok=True)
