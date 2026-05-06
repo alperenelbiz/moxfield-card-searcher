@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
@@ -21,11 +22,33 @@ async def run_fetch_job(
 ) -> None:
     """Execute a fetch job to completion.
 
+    The synchronous body runs on a worker thread via ``asyncio.to_thread`` so
+    the FastAPI event loop stays responsive — multiple fetches truly run in
+    parallel and HTMX progress polls keep getting served while ``time.sleep``
+    paces the Moxfield requests.
+
     On success, atomically inserts the binder and its cards in a single
     transaction and marks the job as done. On failure (including cancellation
     detected mid-stream), the job is marked accordingly and no binder rows
     are committed for a fresh fetch. Refresh handling is in run_refresh_job.
     """
+    await asyncio.to_thread(
+        _run_fetch_job_sync,
+        db_path,
+        job_id,
+        binder_id,
+        scraper,
+        pages_iter,
+    )
+
+
+def _run_fetch_job_sync(
+    db_path: Path,
+    job_id: int,
+    binder_id: str,
+    scraper: Any,
+    pages_iter: PagesIter,
+) -> None:
     rows: list[db.CardRow] = []
     binder_name = ""
     total_cards = 0
@@ -84,8 +107,27 @@ async def run_refresh_job(
     """Execute a refresh job. The old binder row and its cards remain intact
     until the new fetch completes successfully; then a single transaction
     deletes the old cards, inserts the new ones, and updates the binder
-    metadata.
+    metadata. Runs on a worker thread for the same reason as run_fetch_job.
     """
+    await asyncio.to_thread(
+        _run_refresh_job_sync,
+        db_path,
+        job_id,
+        binder_id,
+        existing_binder_id,
+        scraper,
+        pages_iter,
+    )
+
+
+def _run_refresh_job_sync(
+    db_path: Path,
+    job_id: int,
+    binder_id: str,
+    existing_binder_id: int,
+    scraper: Any,
+    pages_iter: PagesIter,
+) -> None:
     rows: list[db.CardRow] = []
     binder_name = ""
     total_cards = 0
