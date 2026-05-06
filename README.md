@@ -48,21 +48,51 @@ The Moxfield API is rate-limited and sits behind Cloudflare, so a typical
 
 ## Web UI (optional)
 
-The CLI is the canonical interface. A minimal local web UI is available as an
-opt-in feature for users who prefer paste-and-click ergonomics.
+A local web app that wraps the same matching pipeline. The CLI remains the
+canonical interface; the web UI is a second consumer aimed at managing
+multiple saved binders and searching across them without re-fetching each
+time.
 
 ```bash
 uv sync --group ui
 uv run --group ui moxfield-card-searcher-ui [--host ...] [--port ...] [--db ...]
 ```
 
-By default the server binds to `127.0.0.1:8000` and stores binders in
-`./binders.db`. Override with `--host`, `--port`, `--db`, or the corresponding
-`MOXFIELD_CARD_SEARCHER_HOST`, `MOXFIELD_CARD_SEARCHER_PORT`, `MOXFIELD_CARD_SEARCHER_DB`
-environment variables. See `.env.example` for the variable list.
+Defaults to `127.0.0.1:8000` and stores binders in `./binders.db`. Override
+with the flags above or the `MOXFIELD_CARD_SEARCHER_HOST`,
+`MOXFIELD_CARD_SEARCHER_PORT`, `MOXFIELD_CARD_SEARCHER_DB` environment
+variables. See `.env.example` for the full list.
 
-The UI is single-user, local-only, and has no authentication. Do not bind it
-to a public interface.
+### What it does
+
+- **Add binders by URL or ID.** Paste a Moxfield URL or bare binder id; the
+  app fetches in the background and a live progress row updates every two
+  seconds via HTMX polling.
+- **Persistent multi-binder library.** Each saved binder lives in
+  `binders.db` with its cards, owner username, and last-fetched timestamp.
+  Refresh and Delete are one click each. Refresh is an atomic swap — old
+  data stays live until the new fetch commits, so a failed or cancelled
+  refresh never leaves you without your binder.
+- **Cancel in flight.** Cancel a running fetch or refresh at any time. A
+  cancelled refresh swaps the row right back into the original binder row
+  with no reload required; a cancelled fresh fetch removes the row cleanly.
+- **Search across every saved binder.** Paste a want list or upload a
+  `.txt`. Results are grouped per binder with Scryfall card art, a narrative
+  status line per card (`All 4 owned`, `Need 2 more`), set/printing details,
+  and a separate monospace table for cards that aren't in any binder.
+  Binders that contributed zero matches are hidden so the page only shows
+  what's relevant.
+- **List-format reference panel.** Sits next to the search input with
+  grouped examples — with set + collector number, without set, and foil-only
+  (`*F*`).
+
+### Caveats
+
+- **Single-user, local-only, no authentication.** Do not bind to a public
+  interface.
+- Card art is fetched from the public Scryfall CDN at render time, so pages
+  need network access to display images. Matching itself is fully offline
+  once a binder is saved.
 
 ## Tiers
 
