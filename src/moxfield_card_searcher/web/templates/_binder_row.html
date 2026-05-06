@@ -1,13 +1,12 @@
 <div class="binder-row" id="binder-{{ binder.id }}">
     <span class="meta">
-        ✓ <strong>{{ binder.name }}</strong>
+        <strong>{{ binder.name }}</strong>
         <a class="binder-link"
            href="https://moxfield.com/binders/{{ binder.moxfield_id }}"
            target="_blank" rel="noopener noreferrer"
            title="Open on Moxfield">↗</a>
-        &mdash;
-        {{ binder.entry_count }} entries
-        ({{ binder.total_cards }} cards), fetched {{ binder.fetched_at }}
+        &middot; {{ binder.total_cards }} cards
+        &middot; {{ binder.fetched_at | local_datetime }}
     </span>
     <button hx-post="/binders/{{ binder.id }}/refresh"
             hx-target="closest .binder-row"

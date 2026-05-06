@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from moxfield_card_searcher.web import db
+from moxfield_card_searcher.web._util import format_local_datetime
 from moxfield_card_searcher.web.routes import register_routes
 
 _PACKAGE_DIR = Path(__file__).parent
@@ -34,6 +35,7 @@ def build_app(*, db_path: Path) -> FastAPI:
     # interpreter is free to garbage-collect a still-running fetch worker.
     app.state.background_tasks = set[asyncio.Task[None]]()
     templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
+    templates.env.filters["local_datetime"] = format_local_datetime
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
     register_routes(app, db_path=db_path, templates=templates)
     return app
