@@ -48,8 +48,9 @@ def test_post_binders_creates_pending_job_and_starts_fetch(
         started.append(job_id)
 
     from moxfield_compare.web import app as app_module
+    from moxfield_compare.web import routes as routes_module
 
-    monkeypatch.setattr(app_module, "run_fetch_job", fake_runner)
+    monkeypatch.setattr(routes_module, "run_fetch_job", fake_runner)
 
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
@@ -242,8 +243,9 @@ def test_refresh_binder_creates_refresh_job(
         started.append((job_id, existing_binder_id))
 
     from moxfield_compare.web import app as app_module
+    from moxfield_compare.web import routes as routes_module
 
-    monkeypatch.setattr(app_module, "run_refresh_job", fake_refresh)
+    monkeypatch.setattr(routes_module, "run_refresh_job", fake_refresh)
     app = app_module.build_app(db_path=db_path)
     client = TestClient(app)
 

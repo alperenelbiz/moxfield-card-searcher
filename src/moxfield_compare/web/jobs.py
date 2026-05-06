@@ -1,18 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from moxfield_compare.binder_fetcher import PageResult, entry_to_card_row, fetch_pages
 from moxfield_compare.web import db
+from moxfield_compare.web._util import iso_now as _now
 
 PagesIter = Callable[[Any, str], Iterator[PageResult]]
-
-
-def _now() -> str:
-    return datetime.now(tz=UTC).isoformat()
 
 
 async def run_fetch_job(
