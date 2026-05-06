@@ -11,9 +11,9 @@
         <div class="card-tile">
             <div class="tier-marker">{{ r.marker }}</div>
             {% if r.scryfall_id %}
-            <img src="https://cards.scryfall.io/normal/front/{{ r.scryfall_id[0] }}/{{ r.scryfall_id[1] }}/{{ r.scryfall_id }}.jpg"
-                 alt="{{ r.name }}" loading="lazy"
-                 onerror="this.replaceWith(Object.assign(document.createElement('div'), {textContent: this.alt, className: 'card-placeholder'}))">
+            <img class="card-image-fallback"
+                 src="https://cards.scryfall.io/normal/front/{{ r.scryfall_id[0] }}/{{ r.scryfall_id[1] }}/{{ r.scryfall_id }}.jpg"
+                 alt="{{ r.name }}" data-card-name="{{ r.name }}" loading="lazy">
             {% else %}
             <div class="card-placeholder">{{ r.name }}</div>
             {% endif %}
