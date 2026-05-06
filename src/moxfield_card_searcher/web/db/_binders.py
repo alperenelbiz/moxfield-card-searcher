@@ -29,22 +29,47 @@ def create_binder(
     return int(cur.lastrowid or 0)
 
 
+def get_binder_by_id(conn: sqlite3.Connection, binder_id: int) -> BinderRow | None:
+    row = conn.execute(
+        "SELECT id, moxfield_id, name, fetched_at, entry_count, total_cards "
+        "FROM binders WHERE id=?",
+        (binder_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return _row_to_binderrow(row)
+
+
+def get_binder_by_moxfield_id(
+    conn: sqlite3.Connection, moxfield_id: str
+) -> BinderRow | None:
+    row = conn.execute(
+        "SELECT id, moxfield_id, name, fetched_at, entry_count, total_cards "
+        "FROM binders WHERE moxfield_id=?",
+        (moxfield_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return _row_to_binderrow(row)
+
+
 def list_binders(conn: sqlite3.Connection) -> list[BinderRow]:
     cur = conn.execute(
         "SELECT id, moxfield_id, name, fetched_at, entry_count, total_cards "
         "FROM binders ORDER BY fetched_at DESC"
     )
-    return [
-        BinderRow(
-            id=r["id"],
-            moxfield_id=r["moxfield_id"],
-            name=r["name"],
-            fetched_at=r["fetched_at"],
-            entry_count=r["entry_count"],
-            total_cards=r["total_cards"],
-        )
-        for r in cur.fetchall()
-    ]
+    return [_row_to_binderrow(r) for r in cur.fetchall()]
+
+
+def _row_to_binderrow(r: sqlite3.Row) -> BinderRow:
+    return BinderRow(
+        id=r["id"],
+        moxfield_id=r["moxfield_id"],
+        name=r["name"],
+        fetched_at=r["fetched_at"],
+        entry_count=r["entry_count"],
+        total_cards=r["total_cards"],
+    )
 
 
 def delete_binder(conn: sqlite3.Connection, binder_id: int) -> bool:

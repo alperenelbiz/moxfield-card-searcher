@@ -46,10 +46,7 @@ def register_routes(
         if not binder_id:
             raise HTTPException(400, "binder URL or ID required")
         with db.connect(db_path) as conn:
-            existing = conn.execute(
-                "SELECT 1 FROM binders WHERE moxfield_id=?", (binder_id,)
-            ).fetchone()
-            if existing is not None:
+            if db.get_binder_by_moxfield_id(conn, binder_id) is not None:
                 raise HTTPException(409, "binder already saved — use Refresh")
             if db.has_active_job(conn, binder_id):
                 raise HTTPException(409, "already fetching this binder")
@@ -77,26 +74,15 @@ def register_routes(
             job = db.get_job(conn, job_id)
             if job is None:
                 raise HTTPException(404, "job not found")
-            if job.status == "done":
-                row = conn.execute(
-                    "SELECT id, moxfield_id, name, fetched_at, entry_count, total_cards "
-                    "FROM binders WHERE moxfield_id=?",
-                    (job.moxfield_id,),
-                ).fetchone()
-                if row is not None:
-                    binder = db.BinderRow(
-                        id=row["id"],
-                        moxfield_id=row["moxfield_id"],
-                        name=row["name"],
-                        fetched_at=row["fetched_at"],
-                        entry_count=row["entry_count"],
-                        total_cards=row["total_cards"],
-                    )
-                    return templates.TemplateResponse(
-                        request,
-                        "_binder_row.html",
-                        {"binder": binder},
-                    )
+            binder = (
+                db.get_binder_by_moxfield_id(conn, job.moxfield_id)
+                if job.status == "done"
+                else None
+            )
+        if binder is not None:
+            return templates.TemplateResponse(
+                request, "_binder_row.html", {"binder": binder}
+            )
         return templates.TemplateResponse(request, "_job_row.html", {"job": job})
 
     @app.delete("/binders/{binder_id}")
@@ -110,12 +96,10 @@ def register_routes(
     @app.post("/binders/{binder_id}/refresh", response_class=HTMLResponse)
     async def refresh_binder(request: Request, binder_id: int) -> HTMLResponse:
         with db.connect(db_path) as conn:
-            row = conn.execute(
-                "SELECT moxfield_id FROM binders WHERE id=?", (binder_id,)
-            ).fetchone()
-            if row is None:
+            existing = db.get_binder_by_id(conn, binder_id)
+            if existing is None:
                 raise HTTPException(404, "binder not found")
-            mox_id = row["moxfield_id"]
+            mox_id = existing.moxfield_id
             if db.has_active_job(conn, mox_id):
                 raise HTTPException(409, "already refreshing")
             job_id = db.create_job(
