@@ -1,5 +1,9 @@
 """CRUD for the `binders` and `cards` tables. Cards live with their binder
-because they're cascade-deleted together and always queried by binder_id."""
+because they're cascade-deleted together and always queried by binder_id.
+
+Functions here never commit on their own — the ``connect()`` context manager
+commits on clean exit and rolls back on exception, so the call site decides
+the transaction boundary."""
 
 from __future__ import annotations
 
@@ -22,7 +26,6 @@ def create_binder(
         "VALUES (?, ?, ?, ?, ?)",
         (moxfield_id, name, fetched_at, entry_count, total_cards),
     )
-    conn.commit()
     return int(cur.lastrowid or 0)
 
 
@@ -46,11 +49,29 @@ def list_binders(conn: sqlite3.Connection) -> list[BinderRow]:
 
 def delete_binder(conn: sqlite3.Connection, binder_id: int) -> bool:
     cur = conn.execute("DELETE FROM binders WHERE id=?", (binder_id,))
-    conn.commit()
     return cur.rowcount > 0
 
 
+def update_binder_metadata(
+    conn: sqlite3.Connection,
+    binder_id: int,
+    *,
+    name: str,
+    fetched_at: str,
+    entry_count: int,
+    total_cards: int,
+) -> None:
+    """Replace the metadata fields of an existing binder row in place. Used by
+    the refresh swap so the binder's `id` survives a fresh fetch."""
+    conn.execute(
+        "UPDATE binders SET name=?, fetched_at=?, entry_count=?, total_cards=? WHERE id=?",
+        (name, fetched_at, entry_count, total_cards, binder_id),
+    )
+
+
 def insert_cards(conn: sqlite3.Connection, binder_id: int, cards: list[CardRow]) -> None:
+    if not cards:
+        return
     conn.executemany(
         "INSERT INTO cards(binder_id, name, name_lower, edition, "
         "collector_number, count, foil, scryfall_id) "
@@ -69,7 +90,12 @@ def insert_cards(conn: sqlite3.Connection, binder_id: int, cards: list[CardRow])
             for c in cards
         ],
     )
-    conn.commit()
+
+
+def delete_cards_for_binder(conn: sqlite3.Connection, binder_id: int) -> None:
+    """Drop all cards belonging to a binder without touching the binder row.
+    Used by the refresh swap as the first half of an atomic replace."""
+    conn.execute("DELETE FROM cards WHERE binder_id=?", (binder_id,))
 
 
 def list_cards(conn: sqlite3.Connection, binder_id: int) -> list[CardRow]:

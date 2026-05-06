@@ -56,12 +56,22 @@ def init_schema(db_path: Path) -> None:
 
 @contextmanager
 def connect(db_path: Path) -> Generator[sqlite3.Connection]:
-    """Open a connection with WAL journal mode and foreign keys enabled."""
+    """Open a connection with WAL journal mode and foreign keys enabled.
+
+    The whole ``with`` block is one transaction: a clean exit commits, an
+    exception rolls back. Call sites stay free of repetitive ``conn.commit()``
+    boilerplate, and multi-statement work (e.g. the refresh swap) inherits
+    atomicity from the context manager."""
     conn = sqlite3.connect(db_path, check_same_thread=False)
     try:
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode = WAL")
         conn.execute("PRAGMA foreign_keys = ON")
-        yield conn
+        try:
+            yield conn
+            conn.commit()
+        except BaseException:
+            conn.rollback()
+            raise
     finally:
         conn.close()

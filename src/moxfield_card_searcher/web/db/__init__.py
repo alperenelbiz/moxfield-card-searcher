@@ -13,9 +13,11 @@ are split by responsibility:
 from moxfield_card_searcher.web.db._binders import (
     create_binder,
     delete_binder,
+    delete_cards_for_binder,
     insert_cards,
     list_binders,
     list_cards,
+    update_binder_metadata,
 )
 from moxfield_card_searcher.web.db._connection import connect, init_schema
 from moxfield_card_searcher.web.db._jobs import (
@@ -39,6 +41,7 @@ __all__ = [
     "create_binder",
     "create_job",
     "delete_binder",
+    "delete_cards_for_binder",
     "fail_job",
     "finish_job",
     "get_job",
@@ -48,5 +51,6 @@ __all__ = [
     "list_binders",
     "list_cards",
     "list_jobs",
+    "update_binder_metadata",
     "update_job_progress",
 ]

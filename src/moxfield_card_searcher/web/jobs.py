@@ -177,39 +177,18 @@ def _run_refresh_job_sync(
             _log.info("refresh job %s cancelled before swap", job_id)
             return
 
-        # Atomic swap: delete old cards, update metadata, insert new cards.
-        # We use a single connection and rely on SQLite transaction semantics.
-        try:
-            conn.execute("BEGIN")
-            conn.execute("DELETE FROM cards WHERE binder_id=?", (existing_binder_id,))
-            conn.execute(
-                "UPDATE binders SET name=?, fetched_at=?, entry_count=?, total_cards=? WHERE id=?",
-                (binder_name or binder_id, _now(), len(rows), total_cards, existing_binder_id),
-            )
-            if rows:
-                conn.executemany(
-                    "INSERT INTO cards(binder_id, name, name_lower, edition, "
-                    "collector_number, count, foil, scryfall_id) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    [
-                        (
-                            existing_binder_id,
-                            c.name,
-                            c.name_lower,
-                            c.edition,
-                            c.collector_number,
-                            c.count,
-                            c.foil,
-                            c.scryfall_id,
-                        )
-                        for c in rows
-                    ],
-                )
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-
+        # Atomic swap: the whole `with` block is one transaction (connect()
+        # commits on clean exit, rolls back on exception).
+        db.delete_cards_for_binder(conn, existing_binder_id)
+        db.update_binder_metadata(
+            conn,
+            existing_binder_id,
+            name=binder_name or binder_id,
+            fetched_at=_now(),
+            entry_count=len(rows),
+            total_cards=total_cards,
+        )
+        db.insert_cards(conn, existing_binder_id, rows)
         db.finish_job(conn, job_id, updated_at=_now())
     _log.info(
         "refresh job %s done — %d entries, %d cards swapped in",

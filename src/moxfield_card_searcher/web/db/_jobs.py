@@ -1,5 +1,8 @@
 """CRUD for the `fetch_jobs` table. Each row tracks one in-flight fetch
-or refresh; finished jobs stay in the table until manually cleared."""
+or refresh; finished jobs stay in the table until manually cleared.
+
+Functions here never commit on their own — the ``connect()`` context manager
+commits on clean exit and rolls back on exception."""
 
 from __future__ import annotations
 
@@ -21,7 +24,6 @@ def create_job(
         "VALUES (?, 'pending', 0, 0, 0, NULL, ?, ?, ?)",
         (moxfield_id, refresh_of_binder_id, created_at, created_at),
     )
-    conn.commit()
     return int(cur.lastrowid or 0)
 
 
@@ -62,7 +64,6 @@ def update_job_progress(
         "progress_pct=?, updated_at=? WHERE id=?",
         (status, pages_done, pages_total, pct, updated_at, job_id),
     )
-    conn.commit()
 
 
 def finish_job(conn: sqlite3.Connection, job_id: int, *, updated_at: str) -> None:
@@ -70,7 +71,6 @@ def finish_job(conn: sqlite3.Connection, job_id: int, *, updated_at: str) -> Non
         "UPDATE fetch_jobs SET status='done', progress_pct=100, updated_at=? WHERE id=?",
         (updated_at, job_id),
     )
-    conn.commit()
 
 
 def fail_job(
@@ -80,7 +80,6 @@ def fail_job(
         "UPDATE fetch_jobs SET status='failed', error_message=?, updated_at=? WHERE id=?",
         (error, updated_at, job_id),
     )
-    conn.commit()
 
 
 def cancel_job(conn: sqlite3.Connection, job_id: int, *, updated_at: str) -> None:
@@ -88,7 +87,6 @@ def cancel_job(conn: sqlite3.Connection, job_id: int, *, updated_at: str) -> Non
         "UPDATE fetch_jobs SET status='cancelled', updated_at=? WHERE id=?",
         (updated_at, job_id),
     )
-    conn.commit()
 
 
 def has_active_job(conn: sqlite3.Connection, moxfield_id: str) -> bool:
