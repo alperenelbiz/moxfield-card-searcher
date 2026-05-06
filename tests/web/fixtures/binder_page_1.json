@@ -6,7 +6,11 @@
     "id": "1",
     "publicId": "TESTBINDER",
     "name": "Test Binder",
-    "description": "fixture"
+    "description": "fixture",
+    "createdBy": {
+      "userName": "fixture_user",
+      "displayName": "Fixture User"
+    }
   },
   "pageNumber": 1,
   "pageSize": 100,

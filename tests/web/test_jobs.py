@@ -19,12 +19,14 @@ def _load_pages() -> list[PageResult]:
             page_number=1,
             total_pages=2,
             binder_name="Test Binder",
+            created_by_username="fixture_user",
             entries=list(p1["data"]),
         ),
         PageResult(
             page_number=2,
             total_pages=2,
             binder_name="Test Binder",
+            created_by_username="fixture_user",
             entries=list(p2["data"]),
         ),
     ]

@@ -50,6 +50,7 @@ class PageResult:
     page_number: int
     total_pages: int
     binder_name: str
+    created_by_username: str | None
     entries: list[dict[str, Any]]
 
 
@@ -75,6 +76,7 @@ def fetch_pages(
     page = 1
     total_pages = 1
     binder_name = ""
+    created_by_username: str | None = None
     while page <= total_pages:
         if page > 1:
             time.sleep(pacing_seconds)
@@ -90,11 +92,15 @@ def fetch_pages(
             total_pages = reported_total if reported_total > 0 else _FALLBACK_TOTAL_PAGES
             trade_binder = cast(dict[str, Any], payload.get("tradeBinder") or {})
             binder_name = str(trade_binder.get("name", ""))
+            created_by = cast(dict[str, Any], trade_binder.get("createdBy") or {})
+            raw_username = created_by.get("userName")
+            created_by_username = str(raw_username) if raw_username else None
         entries = cast(list[dict[str, Any]], payload.get("data") or [])
         yield PageResult(
             page_number=page,
             total_pages=total_pages,
             binder_name=binder_name,
+            created_by_username=created_by_username,
             entries=list(entries),
         )
         page += 1

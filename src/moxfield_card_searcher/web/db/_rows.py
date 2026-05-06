@@ -14,6 +14,7 @@ class BinderRow:
     fetched_at: str
     entry_count: int
     total_cards: int
+    created_by_username: str | None
 
 
 @dataclass(frozen=True)

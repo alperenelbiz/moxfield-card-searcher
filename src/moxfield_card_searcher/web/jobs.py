@@ -24,6 +24,7 @@ class _DrainedPages:
 
     rows: list[db.CardRow]
     binder_name: str
+    created_by_username: str | None
     total_cards: int
 
 
@@ -44,6 +45,7 @@ def _drain_pages(
     refresh paths stay distinguishable in the journal."""
     rows: list[db.CardRow] = []
     binder_name = ""
+    created_by_username: str | None = None
     total_cards = 0
     try:
         for page in pages_iter(scraper, binder_id):
@@ -61,6 +63,7 @@ def _drain_pages(
                     updated_at=_now(),
                 )
             binder_name = page.binder_name or binder_name
+            created_by_username = page.created_by_username or created_by_username
             for entry in page.entries:
                 row = entry_to_card_row(entry)
                 rows.append(row)
@@ -71,7 +74,12 @@ def _drain_pages(
             db.fail_job(exc_conn, job_id, error=str(exc), updated_at=_now())
         return None
 
-    return _DrainedPages(rows=rows, binder_name=binder_name, total_cards=total_cards)
+    return _DrainedPages(
+        rows=rows,
+        binder_name=binder_name,
+        created_by_username=created_by_username,
+        total_cards=total_cards,
+    )
 
 
 async def run_fetch_job(
@@ -129,6 +137,7 @@ def _run_fetch_job_sync(
             fetched_at=_now(),
             entry_count=len(drained.rows),
             total_cards=drained.total_cards,
+            created_by_username=drained.created_by_username,
         )
         db.insert_cards(conn, binder_row_id, drained.rows)
         db.finish_job(conn, job_id, updated_at=_now())
@@ -195,6 +204,7 @@ def _run_refresh_job_sync(
             fetched_at=_now(),
             entry_count=len(drained.rows),
             total_cards=drained.total_cards,
+            created_by_username=drained.created_by_username,
         )
         db.insert_cards(conn, existing_binder_id, drained.rows)
         db.finish_job(conn, job_id, updated_at=_now())

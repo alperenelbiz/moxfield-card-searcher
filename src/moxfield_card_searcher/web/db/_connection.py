@@ -9,12 +9,13 @@ from pathlib import Path
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS binders (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    moxfield_id     TEXT NOT NULL UNIQUE,
-    name            TEXT NOT NULL,
-    fetched_at      TEXT NOT NULL,
-    entry_count     INTEGER NOT NULL,
-    total_cards     INTEGER NOT NULL
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    moxfield_id         TEXT NOT NULL UNIQUE,
+    name                TEXT NOT NULL,
+    fetched_at          TEXT NOT NULL,
+    entry_count         INTEGER NOT NULL,
+    total_cards         INTEGER NOT NULL,
+    created_by_username TEXT
 );
 
 CREATE TABLE IF NOT EXISTS cards (
@@ -48,10 +49,24 @@ CREATE TABLE IF NOT EXISTS fetch_jobs (
 
 
 def init_schema(db_path: Path) -> None:
-    """Create tables/indexes if missing. Safe to call repeatedly."""
+    """Create tables/indexes if missing. Safe to call repeatedly.
+
+    Also runs idempotent column-add migrations for legacy DBs created before
+    a column existed in the canonical schema. SQLite's ALTER TABLE raises if
+    the column already exists, so we swallow that specific failure and let
+    real errors bubble up."""
     with connect(db_path) as conn:
         conn.executescript(_SCHEMA)
+        _add_column_if_missing(conn, "binders", "created_by_username", "TEXT")
         conn.commit()
+
+
+def _add_column_if_missing(
+    conn: sqlite3.Connection, table: str, column: str, type_: str
+) -> None:
+    cols = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {type_}")
 
 
 @contextmanager

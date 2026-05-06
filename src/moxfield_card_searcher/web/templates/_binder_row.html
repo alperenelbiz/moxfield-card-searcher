@@ -5,6 +5,9 @@
            href="https://moxfield.com/binders/{{ binder.moxfield_id }}"
            target="_blank" rel="noopener noreferrer"
            title="Open on Moxfield">↗</a>
+        {% if binder.created_by_username %}
+        &middot; by {{ binder.created_by_username }}
+        {% endif %}
         &middot; {{ binder.total_cards }} cards
         &middot; {{ binder.fetched_at | local_datetime }}
     </span>

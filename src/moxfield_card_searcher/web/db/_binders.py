@@ -11,6 +11,10 @@ import sqlite3
 
 from moxfield_card_searcher.web.db._rows import BinderRow, CardRow
 
+_BINDER_COLUMNS = (
+    "id, moxfield_id, name, fetched_at, entry_count, total_cards, created_by_username"
+)
+
 
 def create_binder(
     conn: sqlite3.Connection,
@@ -20,19 +24,19 @@ def create_binder(
     fetched_at: str,
     entry_count: int,
     total_cards: int,
+    created_by_username: str | None = None,
 ) -> int:
     cur = conn.execute(
-        "INSERT INTO binders(moxfield_id, name, fetched_at, entry_count, total_cards) "
-        "VALUES (?, ?, ?, ?, ?)",
-        (moxfield_id, name, fetched_at, entry_count, total_cards),
+        "INSERT INTO binders(moxfield_id, name, fetched_at, entry_count, "
+        "total_cards, created_by_username) VALUES (?, ?, ?, ?, ?, ?)",
+        (moxfield_id, name, fetched_at, entry_count, total_cards, created_by_username),
     )
     return int(cur.lastrowid or 0)
 
 
 def get_binder_by_id(conn: sqlite3.Connection, binder_id: int) -> BinderRow | None:
     row = conn.execute(
-        "SELECT id, moxfield_id, name, fetched_at, entry_count, total_cards "
-        "FROM binders WHERE id=?",
+        f"SELECT {_BINDER_COLUMNS} FROM binders WHERE id=?",
         (binder_id,),
     ).fetchone()
     if row is None:
@@ -44,8 +48,7 @@ def get_binder_by_moxfield_id(
     conn: sqlite3.Connection, moxfield_id: str
 ) -> BinderRow | None:
     row = conn.execute(
-        "SELECT id, moxfield_id, name, fetched_at, entry_count, total_cards "
-        "FROM binders WHERE moxfield_id=?",
+        f"SELECT {_BINDER_COLUMNS} FROM binders WHERE moxfield_id=?",
         (moxfield_id,),
     ).fetchone()
     if row is None:
@@ -55,8 +58,7 @@ def get_binder_by_moxfield_id(
 
 def list_binders(conn: sqlite3.Connection) -> list[BinderRow]:
     cur = conn.execute(
-        "SELECT id, moxfield_id, name, fetched_at, entry_count, total_cards "
-        "FROM binders ORDER BY fetched_at DESC"
+        f"SELECT {_BINDER_COLUMNS} FROM binders ORDER BY fetched_at DESC"
     )
     return [_row_to_binderrow(r) for r in cur.fetchall()]
 
@@ -69,6 +71,7 @@ def _row_to_binderrow(r: sqlite3.Row) -> BinderRow:
         fetched_at=r["fetched_at"],
         entry_count=r["entry_count"],
         total_cards=r["total_cards"],
+        created_by_username=r["created_by_username"],
     )
 
 
@@ -85,12 +88,14 @@ def update_binder_metadata(
     fetched_at: str,
     entry_count: int,
     total_cards: int,
+    created_by_username: str | None = None,
 ) -> None:
     """Replace the metadata fields of an existing binder row in place. Used by
     the refresh swap so the binder's `id` survives a fresh fetch."""
     conn.execute(
-        "UPDATE binders SET name=?, fetched_at=?, entry_count=?, total_cards=? WHERE id=?",
-        (name, fetched_at, entry_count, total_cards, binder_id),
+        "UPDATE binders SET name=?, fetched_at=?, entry_count=?, total_cards=?, "
+        "created_by_username=? WHERE id=?",
+        (name, fetched_at, entry_count, total_cards, created_by_username, binder_id),
     )
 
 
