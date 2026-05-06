@@ -1,43 +1,95 @@
 {% extends "base.html" %}
 {% block body %}
+<main>
+
 <section id="binders">
-    <h2>Binders</h2>
-    <form id="add-binder-form"
-          hx-post="/binders"
-          hx-target="#binders-list"
-          hx-swap="afterbegin"
-          hx-on::after-request="this.reset()">
-        <input type="text" name="binder_input" placeholder="Moxfield URL or ID" required>
-        <button type="submit">Add binder</button>
-    </form>
-    <div id="binders-list">
-        {% for job in jobs %}
-            {% include "_job_row.html" %}
-        {% endfor %}
-        {% for binder in binders %}
-            {% include "_binder_row.html" %}
-        {% endfor %}
-    </div>
+    <details class="accordion" open>
+        <summary class="accordion-head">
+            <h2>Binders <span class="count">— {{ binders | length }} saved{% if jobs %} · {{ jobs | length }} fetching{% endif %}</span></h2>
+            <span class="chev" aria-hidden="true">▾</span>
+        </summary>
+        <div class="accordion-body">
+
+            <form id="add-binder-form" class="add-form"
+                  hx-post="/binders"
+                  hx-target="#binders-list"
+                  hx-swap="afterbegin"
+                  hx-on::after-request="this.reset()">
+                <input type="text" name="binder_input" placeholder="Moxfield URL or binder ID" required>
+                <button type="submit">Add binder</button>
+            </form>
+
+            <table class="binders">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Owner</th>
+                        <th class="num">Cards</th>
+                        <th>Updated</th>
+                        <th class="actions"></th>
+                    </tr>
+                </thead>
+                <tbody id="binders-list">
+                    {% for job in jobs %}
+                        {% include "_job_row.html" %}
+                    {% endfor %}
+                    {% for binder in binders %}
+                        {% include "_binder_row.html" %}
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </details>
 </section>
 
 <section id="search">
     <h2>Search</h2>
-    <form id="search-form"
+    <form id="search-form" class="search-form"
           hx-post="/search"
           hx-target="#search-results"
           hx-encoding="multipart/form-data">
-        <label>Want list file (.txt, optional):
-            <input type="file" name="wantlist_file" accept=".txt">
-        </label>
-        <br>
-        <label>Or paste:<br>
-            <textarea name="wantlist_text" rows="10" cols="60"
-                      placeholder="4 Lightning Bolt (M21) 162"></textarea>
-        </label>
-        <br>
-        <button type="submit">Search</button>
+        <div class="search-cols">
+            <div class="search-left">
+                <textarea name="wantlist_text" rows="10"
+                          placeholder="Paste your want list here, one card per line…
+e.g. 4 Lightning Bolt (M21) 162"></textarea>
+                <div class="row">
+                    <label>Or upload a .txt file:
+                        <input type="file" name="wantlist_file" accept=".txt">
+                    </label>
+                </div>
+                <div class="row">
+                    <button type="submit">Search</button>
+                </div>
+            </div>
+            <aside class="format-ref">
+                <h3>List format</h3>
+                <p class="lead">One card per line. Quantity first, then name. Set + collector
+                    number are optional but make matches more precise.</p>
+                <div class="ref-group">
+                    <div class="ref-label">With set + collector number</div>
+<pre>4 Lightning Bolt (M21) 162
+2 Sol Ring (CMR) 263
+1 Doubling Season (RAV) 154</pre>
+                </div>
+                <div class="ref-group">
+                    <div class="ref-label">Without set</div>
+<pre>2 Counterspell
+3 Birds of Paradise
+1 Force of Will</pre>
+                </div>
+                <div class="ref-group">
+                    <div class="ref-label">Foil only</div>
+<pre>1 Wasteland (EXP) 35 *F*
+2 Mana Crypt *F*</pre>
+                    <p class="hint">Add <code>*F*</code> at the end to require foil.</p>
+                </div>
+            </aside>
+        </div>
     </form>
-    <div id="search-results">
-    </div>
+    <div id="search-results"></div>
 </section>
+
+</main>
 {% endblock %}
