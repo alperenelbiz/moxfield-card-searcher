@@ -3,30 +3,35 @@
 {% endif %}
 
 {% for group in binder_groups %}
-<section class="search-binder">
-    <h3>
-        {{ group.binder.name }}
-        <a class="binder-link"
-           href="https://moxfield.com/binders/{{ group.binder.moxfield_id }}"
-           target="_blank" rel="noopener noreferrer"
-           title="Open on Moxfield">↗</a>
-        — {{ group.found_count }}/{{ total_wants }} cards
+<section class="results-group">
+    <h3 class="group-head">
+        <span class="group-name">
+            <a href="https://moxfield.com/binders/{{ group.binder.moxfield_id }}"
+               target="_blank" rel="noopener noreferrer"
+               title="Open on Moxfield">{{ group.binder.name }} ↗</a>
+        </span>
+        <span class="group-count">{{ group.found_count }} / {{ total_wants }} cards</span>
     </h3>
     {% if group.results %}
-    <div class="binder-grid">
+    <div class="grid">
         {% for r in group.results %}
-        <div class="card-tile">
-            <div class="tier-marker">{{ r.marker }}</div>
-            {% if r.scryfall_id %}
-            <img class="card-image-fallback"
-                 src="https://cards.scryfall.io/normal/front/{{ r.scryfall_id[0] }}/{{ r.scryfall_id[1] }}/{{ r.scryfall_id }}.jpg"
-                 alt="{{ r.name }}" data-card-name="{{ r.name }}" loading="lazy">
-            {% else %}
-            <div class="card-placeholder">{{ r.name }}</div>
-            {% endif %}
-            <div>{{ r.name }}</div>
-            {% if r.annotation %}<div class="notice">{{ r.annotation }}</div>{% endif %}
-            {% if r.also_in %}<div class="notice">also in: {{ r.also_in | join(', ') }}</div>{% endif %}
+        <div class="tile">
+            <div class="tile-art">
+                {% if r.scryfall_id %}
+                <img class="card-image-fallback"
+                     src="https://cards.scryfall.io/normal/front/{{ r.scryfall_id[0] }}/{{ r.scryfall_id[1] }}/{{ r.scryfall_id }}.jpg"
+                     alt="{{ r.name }}" data-card-name="{{ r.name }}" loading="lazy">
+                {% else %}
+                <div class="card-placeholder">{{ r.name }}</div>
+                {% endif %}
+            </div>
+            <div class="tile-name">{{ r.name }}</div>
+            <div class="tile-status">
+                {% if r.headline %}<div class="headline">{{ r.headline }}</div>{% endif %}
+                {% if r.detail %}<div class="detail">{{ r.detail }}{% if r.also_in %}<br>also in: {{ r.also_in | join(', ') }}{% endif %}</div>
+                {% elif r.also_in %}<div class="detail">also in: {{ r.also_in | join(', ') }}</div>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -37,9 +42,29 @@
 {% endfor %}
 
 {% if missing %}
-<section class="search-missing">
-    <h3>Not in any binder — {{ missing | length }}/{{ total_wants }}</h3>
-    <pre class="missing-list">{% for line in missing %}{{ line }}
-{% endfor %}</pre>
+<section class="missing-wrap">
+    <h3 class="group-head">
+        <span class="group-name">Not in any binder</span>
+        <span class="group-count">{{ missing | length }} / {{ total_wants }} cards</span>
+    </h3>
+    <table class="missing">
+        <tbody>
+        {% for entry in missing %}
+            <tr>
+                <td class="qty">{{ entry.qty }}</td>
+                <td class="name">{{ entry.display_name }}</td>
+                <td class="set">
+                    {%- if entry.set and entry.cn -%}
+                        ({{ entry.set | upper }}) {{ entry.cn }}{% if entry.foil_only %} *F*{% endif %}
+                    {%- elif entry.foil_only -%}
+                        *F*
+                    {%- else -%}
+                        —
+                    {%- endif -%}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 </section>
 {% endif %}

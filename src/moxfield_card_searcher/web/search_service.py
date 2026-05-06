@@ -14,8 +14,8 @@ from moxfield_card_searcher.collection import Collection
 from moxfield_card_searcher.domain import MatchTier, WantEntry
 from moxfield_card_searcher.formatting import (
     annotation_for,
-    format_want_line,
     marker_for,
+    narrative_status_for,
 )
 from moxfield_card_searcher.matcher import match
 from moxfield_card_searcher.web import db
@@ -31,7 +31,7 @@ class BinderGroup:
 @dataclass(frozen=True)
 class SearchResult:
     binder_groups: list[BinderGroup]
-    missing: list[str]
+    missing: list[WantEntry]
     total_wants: int
 
 
@@ -49,7 +49,7 @@ def run_search(db_path: Path, wants: list[WantEntry]) -> SearchResult:
     _annotate_cross_binder(per_binder_results, binder_to_name)
 
     missing_lines = [
-        format_want_line(w)
+        w
         for w in wants
         if not any(
             any(r["name"] == w.display_name for r in per_binder_results[b.id])
@@ -92,6 +92,7 @@ def _match_binder(
                 (sc for (n, _, _), sc in scryfall_index.items() if n == w.name),
                 None,
             )
+        headline, detail = narrative_status_for(res)
         results.append(
             {
                 "tier": res.tier,
@@ -100,6 +101,8 @@ def _match_binder(
                 "scryfall_id": sid,
                 "annotation": annotation_for(res),
                 "also_in": [],
+                "headline": headline,
+                "detail": detail,
             }
         )
     return results
