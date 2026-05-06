@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>moxfield-compare</h1>
+
+<section id="binders">
+    <h2>Binders</h2>
+    <form id="add-binder-form"
+          hx-post="/binders"
+          hx-target="#binders-list"
+          hx-swap="afterbegin"
+          hx-on::after-request="this.reset()">
+        <input type="text" name="binder_input" placeholder="Moxfield URL or ID" required>
+        <button type="submit">Add binder</button>
+    </form>
+    <div id="binders-list">
+        {% for job in jobs %}
+            {% include "_job_row.html" %}
+        {% endfor %}
+        {% for binder in binders %}
+            {% include "_binder_row.html" %}
+        {% endfor %}
+    </div>
+</section>
+
+<section id="search">
+    <h2>Search</h2>
+    <form id="search-form"
+          hx-post="/search"
+          hx-target="#search-results"
+          hx-encoding="multipart/form-data">
+        <label>Want list file (.txt, optional):
+            <input type="file" name="wantlist_file" accept=".txt">
+        </label>
+        <br>
+        <label>Or paste:<br>
+            <textarea name="wantlist_text" rows="10" cols="60"
+                      placeholder="4 Lightning Bolt (M21) 162"></textarea>
+        </label>
+        <br>
+        <button type="submit">Search</button>
+    </form>
+    <div id="search-results">
+    </div>
+</section>
+{% endblock %}

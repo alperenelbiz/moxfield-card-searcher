@@ -1,0 +1,23 @@
+<div class="job-row {{ 'failed' if job.status == 'failed' else '' }}"
+     id="job-{{ job.id }}"
+     {% if job.status in ('pending', 'fetching') %}
+     hx-get="/jobs/{{ job.id }}"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     {% endif %}>
+    {% if job.status == 'failed' %}
+        ✗ <strong>{{ job.moxfield_id }}</strong> — failed: {{ job.error_message }}
+    {% elif job.status == 'cancelled' %}
+        ⊗ <strong>{{ job.moxfield_id }}</strong> — cancelled
+    {% else %}
+        🔄 <strong>{{ job.moxfield_id }}</strong> —
+        {% if job.pages_total > 0 %}
+            {{ job.pages_done }}/{{ job.pages_total }} ({{ job.progress_pct }}%)
+        {% else %}
+            pending…
+        {% endif %}
+        <button hx-post="/jobs/{{ job.id }}/cancel"
+                hx-target="closest .job-row"
+                hx-swap="outerHTML">✕ cancel</button>
+    {% endif %}
+</div>

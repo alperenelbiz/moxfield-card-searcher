@@ -1,0 +1,38 @@
+{% if file_overrode_text %}
+<p class="notice">Both a file and textarea were provided — the file was used and the textarea was ignored.</p>
+{% endif %}
+
+{% for group in binder_groups %}
+<section class="search-binder">
+    <h3>{{ group.binder.name }} — {{ group.found_count }}/{{ total_wants }} cards</h3>
+    {% if group.results %}
+    <div class="binder-grid">
+        {% for r in group.results %}
+        <div class="card-tile">
+            <div class="tier-marker">{{ r.marker }}</div>
+            {% if r.scryfall_id %}
+            <img src="https://cards.scryfall.io/normal/front/{{ r.scryfall_id[0] }}/{{ r.scryfall_id[1] }}/{{ r.scryfall_id }}.jpg"
+                 alt="{{ r.name }}" loading="lazy"
+                 onerror="this.replaceWith(Object.assign(document.createElement('div'), {textContent: this.alt, className: 'card-placeholder'}))">
+            {% else %}
+            <div class="card-placeholder">{{ r.name }}</div>
+            {% endif %}
+            <div>{{ r.name }}</div>
+            {% if r.annotation %}<div class="notice">{{ r.annotation }}</div>{% endif %}
+            {% if r.also_in %}<div class="notice">also in: {{ r.also_in | join(', ') }}</div>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="notice">(none)</p>
+    {% endif %}
+</section>
+{% endfor %}
+
+{% if missing %}
+<section class="search-missing">
+    <h3>Not in any binder — {{ missing | length }}/{{ total_wants }}</h3>
+    <pre class="missing-list">{% for line in missing %}{{ line }}
+{% endfor %}</pre>
+</section>
+{% endif %}

@@ -1,0 +1,16 @@
+<div class="binder-row" id="binder-{{ binder.id }}">
+    <span class="meta">
+        ✓ <strong>{{ binder.name }}</strong> &mdash;
+        {{ binder.entry_count }} entries
+        ({{ binder.total_cards }} cards), fetched {{ binder.fetched_at }}
+    </span>
+    <button hx-post="/binders/{{ binder.id }}/refresh"
+            hx-target="closest .binder-row"
+            hx-swap="outerHTML"
+            title="Refresh">🔄</button>
+    <button hx-delete="/binders/{{ binder.id }}"
+            hx-target="closest .binder-row"
+            hx-swap="outerHTML"
+            hx-confirm="Delete this binder?"
+            title="Delete">🗑</button>
+</div>

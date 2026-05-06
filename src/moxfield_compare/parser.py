@@ -28,9 +28,19 @@ _FOIL_TAIL = re.compile(r"\s*\*F\*\s*$")
 
 
 def parse_list(path: Path) -> list[WantEntry]:
-    text = Path(path).read_text(encoding="utf-8")
+    return _parse_lines(Path(path).read_text(encoding="utf-8").splitlines())
+
+
+def parse_list_text(text: str) -> list[WantEntry]:
+    """Same as parse_list but accepts the raw text directly. The web UI uses
+    this so an uploaded file or a textarea string can both be parsed without
+    writing to a temp file first."""
+    return _parse_lines(text.splitlines())
+
+
+def _parse_lines(lines: list[str]) -> list[WantEntry]:
     raw: list[WantEntry] = []
-    for raw_line in text.splitlines():
+    for raw_line in lines:
         line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
