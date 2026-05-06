@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable, Iterator
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,64 @@ from moxfield_card_searcher.web._util import iso_now as _now
 PagesIter = Callable[[Any, str], Iterator[PageResult]]
 
 _log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class _DrainedPages:
+    """Successful drain result. Cancellation and failure are signalled by
+    returning ``None`` from ``_drain_pages`` instead — the helper has already
+    written the appropriate job-status row in those cases."""
+
+    rows: list[db.CardRow]
+    binder_name: str
+    total_cards: int
+
+
+def _drain_pages(
+    db_path: Path,
+    job_id: int,
+    binder_id: str,
+    scraper: Any,
+    pages_iter: PagesIter,
+    *,
+    label: str,
+) -> _DrainedPages | None:
+    """Iterate pages, accumulate CardRows, update progress.
+
+    Returns ``None`` (and writes ``cancelled`` / ``failed`` to the job row) if
+    the worker should bail; returns a ``_DrainedPages`` for the caller to
+    commit on success. ``label`` is just for log messages so fetch and
+    refresh paths stay distinguishable in the journal."""
+    rows: list[db.CardRow] = []
+    binder_name = ""
+    total_cards = 0
+    try:
+        for page in pages_iter(scraper, binder_id):
+            with db.connect(db_path) as conn:
+                job = db.get_job(conn, job_id)
+                if job is not None and job.status == "cancelled":
+                    _log.info("%s job %s cancelled mid-stream", label, job_id)
+                    return None
+                db.update_job_progress(
+                    conn,
+                    job_id,
+                    status="fetching",
+                    pages_done=page.page_number,
+                    pages_total=page.total_pages,
+                    updated_at=_now(),
+                )
+            binder_name = page.binder_name or binder_name
+            for entry in page.entries:
+                row = entry_to_card_row(entry)
+                rows.append(row)
+                total_cards += row.count
+    except Exception as exc:
+        _log.exception("%s job %s failed: %s", label, job_id, exc)
+        with db.connect(db_path) as exc_conn:
+            db.fail_job(exc_conn, job_id, error=str(exc), updated_at=_now())
+        return None
+
+    return _DrainedPages(rows=rows, binder_name=binder_name, total_cards=total_cards)
 
 
 async def run_fetch_job(
@@ -53,37 +112,10 @@ def _run_fetch_job_sync(
     pages_iter: PagesIter,
 ) -> None:
     _log.info("fetch job %s starting for binder %s", job_id, binder_id)
-    rows: list[db.CardRow] = []
-    binder_name = ""
-    total_cards = 0
-    try:
-        for page in pages_iter(scraper, binder_id):
-            with db.connect(db_path) as conn:
-                # Cooperative cancellation check.
-                job = db.get_job(conn, job_id)
-                if job is not None and job.status == "cancelled":
-                    _log.info("fetch job %s cancelled mid-stream", job_id)
-                    return
-                db.update_job_progress(
-                    conn,
-                    job_id,
-                    status="fetching",
-                    pages_done=page.page_number,
-                    pages_total=page.total_pages,
-                    updated_at=_now(),
-                )
-            binder_name = page.binder_name or binder_name
-            for entry in page.entries:
-                row = entry_to_card_row(entry)
-                rows.append(row)
-                total_cards += row.count
-    except Exception as exc:  # network, JSON, anything
-        _log.exception("fetch job %s failed: %s", job_id, exc)
-        with db.connect(db_path) as exc_conn:
-            db.fail_job(exc_conn, job_id, error=str(exc), updated_at=_now())
+    drained = _drain_pages(db_path, job_id, binder_id, scraper, pages_iter, label="fetch")
+    if drained is None:
         return
 
-    # Final cancellation check before commit.
     with db.connect(db_path) as conn:
         job = db.get_job(conn, job_id)
         if job is not None and job.status == "cancelled":
@@ -93,15 +125,16 @@ def _run_fetch_job_sync(
         binder_row_id = db.create_binder(
             conn,
             moxfield_id=binder_id,
-            name=binder_name or binder_id,
+            name=drained.binder_name or binder_id,
             fetched_at=_now(),
-            entry_count=len(rows),
-            total_cards=total_cards,
+            entry_count=len(drained.rows),
+            total_cards=drained.total_cards,
         )
-        db.insert_cards(conn, binder_row_id, rows)
+        db.insert_cards(conn, binder_row_id, drained.rows)
         db.finish_job(conn, job_id, updated_at=_now())
     _log.info(
-        "fetch job %s done — %d entries, %d cards", job_id, len(rows), total_cards
+        "fetch job %s done — %d entries, %d cards",
+        job_id, len(drained.rows), drained.total_cards,
     )
 
 
@@ -142,33 +175,8 @@ def _run_refresh_job_sync(
         "refresh job %s starting (binder=%s, existing_id=%d)",
         job_id, binder_id, existing_binder_id,
     )
-    rows: list[db.CardRow] = []
-    binder_name = ""
-    total_cards = 0
-    try:
-        for page in pages_iter(scraper, binder_id):
-            with db.connect(db_path) as conn:
-                job = db.get_job(conn, job_id)
-                if job is not None and job.status == "cancelled":
-                    _log.info("refresh job %s cancelled mid-stream", job_id)
-                    return
-                db.update_job_progress(
-                    conn,
-                    job_id,
-                    status="fetching",
-                    pages_done=page.page_number,
-                    pages_total=page.total_pages,
-                    updated_at=_now(),
-                )
-            binder_name = page.binder_name or binder_name
-            for entry in page.entries:
-                row = entry_to_card_row(entry)
-                rows.append(row)
-                total_cards += row.count
-    except Exception as exc:
-        _log.exception("refresh job %s failed (old data preserved): %s", job_id, exc)
-        with db.connect(db_path) as exc_conn:
-            db.fail_job(exc_conn, job_id, error=str(exc), updated_at=_now())
+    drained = _drain_pages(db_path, job_id, binder_id, scraper, pages_iter, label="refresh")
+    if drained is None:
         return
 
     with db.connect(db_path) as conn:
@@ -183,14 +191,14 @@ def _run_refresh_job_sync(
         db.update_binder_metadata(
             conn,
             existing_binder_id,
-            name=binder_name or binder_id,
+            name=drained.binder_name or binder_id,
             fetched_at=_now(),
-            entry_count=len(rows),
-            total_cards=total_cards,
+            entry_count=len(drained.rows),
+            total_cards=drained.total_cards,
         )
-        db.insert_cards(conn, existing_binder_id, rows)
+        db.insert_cards(conn, existing_binder_id, drained.rows)
         db.finish_job(conn, job_id, updated_at=_now())
     _log.info(
         "refresh job %s done — %d entries, %d cards swapped in",
-        job_id, len(rows), total_cards,
+        job_id, len(drained.rows), drained.total_cards,
     )
