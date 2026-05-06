@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.pyright/
+
+# uv
+.venv/
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# User-fetched binder data and search outputs (project root only —
+# tests/fixtures/*.csv must stay tracked).
+/*.csv
+!tests/fixtures/*.csv
+/results-*/
+/tarama-listesi.txt
+binders.db
+binders.db-wal
+binders.db-shm

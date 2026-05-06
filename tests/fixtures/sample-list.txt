@@ -1,0 +1,6 @@
+# Sample want list mixing all formats
+4 Lightning Bolt (m21) 162
+2 Lightning Bolt (m21) 162 *F*
+4 Goblin Guide
+1 Sol Ring (cmm) 410
+1 Black Lotus
